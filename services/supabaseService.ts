@@ -20,6 +20,13 @@ const dbToCharacter = (dbChar: any, matchHistory: MatchResult[] = []): Character
     console.error('Invalid character data:', dbChar);
   }
   
+  // Helper to ensure numeric values
+  const toNumber = (value: any, defaultValue: number): number => {
+    if (value == null) return defaultValue;
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(num) ? defaultValue : num;
+  };
+  
   return {
     id: dbChar.id || '',
     name: dbChar.name || 'Unknown',
@@ -28,19 +35,19 @@ const dbToCharacter = (dbChar: any, matchHistory: MatchResult[] = []): Character
     description: dbChar.description || '',
     faction: dbChar.faction || 'Other',
     wikiLink: dbChar.wiki_link || undefined,
-    // Use nullish coalescing to preserve 0 values, but default to INITIAL_ELO for null/undefined
-    overallElo: dbChar.overall_elo != null ? dbChar.overall_elo : INITIAL_ELO,
-    handToHandElo: dbChar.hand_to_hand_elo != null ? dbChar.hand_to_hand_elo : INITIAL_ELO,
-    bladedWeaponsElo: dbChar.bladed_weapons_elo != null ? dbChar.bladed_weapons_elo : INITIAL_ELO,
-    firearmsElo: dbChar.firearms_elo != null ? dbChar.firearms_elo : INITIAL_ELO,
-    battleIqElo: dbChar.battle_iq_elo != null ? dbChar.battle_iq_elo : INITIAL_ELO,
-    physicalStatsElo: dbChar.physical_stats_elo != null ? dbChar.physical_stats_elo : INITIAL_ELO,
-    speedElo: dbChar.speed_elo != null ? dbChar.speed_elo : INITIAL_ELO,
-    durabilityElo: dbChar.durability_elo != null ? dbChar.durability_elo : INITIAL_ELO,
-    staminaElo: dbChar.stamina_elo != null ? dbChar.stamina_elo : INITIAL_ELO,
-    assassinationElo: dbChar.assassination_elo != null ? dbChar.assassination_elo : INITIAL_ELO,
-    wins: dbChar.wins != null ? dbChar.wins : 0,
-    losses: dbChar.losses != null ? dbChar.losses : 0,
+    // Ensure all ELO values are numbers
+    overallElo: toNumber(dbChar.overall_elo, INITIAL_ELO),
+    handToHandElo: toNumber(dbChar.hand_to_hand_elo, INITIAL_ELO),
+    bladedWeaponsElo: toNumber(dbChar.bladed_weapons_elo, INITIAL_ELO),
+    firearmsElo: toNumber(dbChar.firearms_elo, INITIAL_ELO),
+    battleIqElo: toNumber(dbChar.battle_iq_elo, INITIAL_ELO),
+    physicalStatsElo: toNumber(dbChar.physical_stats_elo, INITIAL_ELO),
+    speedElo: toNumber(dbChar.speed_elo, INITIAL_ELO),
+    durabilityElo: toNumber(dbChar.durability_elo, INITIAL_ELO),
+    staminaElo: toNumber(dbChar.stamina_elo, INITIAL_ELO),
+    assassinationElo: toNumber(dbChar.assassination_elo, INITIAL_ELO),
+    wins: toNumber(dbChar.wins, 0),
+    losses: toNumber(dbChar.losses, 0),
     matchHistory: matchHistory || []
   };
 };

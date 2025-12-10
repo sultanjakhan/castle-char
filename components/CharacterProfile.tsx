@@ -36,15 +36,17 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
 
   if (!character) return <div>Loading...</div>;
 
-  const tier = getTier(character.overallElo);
+  // Ensure we have valid ELO values
+  const overallElo = character.overallElo || 1200;
+  const tier = getTier(overallElo);
 
   const chartData = [
-    { subject: 'Hand-to-Hand', A: character.handToHandElo, fullMark: 2000 },
-    { subject: 'Bladed', A: character.bladedWeaponsElo, fullMark: 2000 },
-    { subject: 'Firearms', A: character.firearmsElo, fullMark: 2000 },
-    { subject: 'Battle IQ', A: character.battleIqElo, fullMark: 2000 },
-    { subject: 'Physical', A: character.physicalStatsElo, fullMark: 2000 },
-    { subject: 'Assassination', A: character.assassinationElo, fullMark: 2000 },
+    { subject: 'Hand-to-Hand', A: character.handToHandElo || 1200, fullMark: 2000 },
+    { subject: 'Bladed', A: character.bladedWeaponsElo || 1200, fullMark: 2000 },
+    { subject: 'Firearms', A: character.firearmsElo || 1200, fullMark: 2000 },
+    { subject: 'Battle IQ', A: character.battleIqElo || 1200, fullMark: 2000 },
+    { subject: 'Physical', A: character.physicalStatsElo || 1200, fullMark: 2000 },
+    { subject: 'Assassination', A: character.assassinationElo || 1200, fullMark: 2000 },
   ];
 
   const handleSwitchVersion = async (id: string) => {
@@ -151,7 +153,7 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
                   <div className="flex items-center gap-2 text-slate-500 text-sm uppercase mb-1">
                     <Trophy className="w-4 h-4" /> Overall Elo
                   </div>
-                  <div className="text-3xl font-bold text-red-500">{character.overallElo}</div>
+                  <div className="text-3xl font-bold text-red-500">{character.overallElo || 1200}</div>
                </div>
                <div className="bg-slate-950/50 p-4 rounded-lg border border-slate-800">
                   <div className="flex items-center gap-2 text-slate-500 text-sm uppercase mb-1">
@@ -174,8 +176,8 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
           <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-red-500" /> Combat Parameters
           </h3>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full min-h-[300px]">
+            <ResponsiveContainer width="100%" height={300}>
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
                 <PolarGrid stroke="#334155" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
