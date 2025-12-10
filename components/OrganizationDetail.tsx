@@ -18,6 +18,7 @@ interface OrganizationDetailProps {
 
 export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction, onBack, onSelectCharacter, onDataChange, onEditCharacter, onDeleteCharacter }) => {
   const [members, setMembers] = useState<Character[]>([]);
+  const [allFactionMembers, setAllFactionMembers] = useState<Character[]>([]); // All versions for stats
   const [availableRecruits, setAvailableRecruits] = useState<Character[]>([]);
   const [isRecruiting, setIsRecruiting] = useState(false);
   
@@ -39,21 +40,43 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
     load();
   }, [faction]);
 
+  // Get unique characters by name (only one version per character)
+  const getUniqueCharacters = (chars: Character[]): Character[] => {
+    const uniqueMap = new Map<string, Character>();
+    chars.forEach(c => {
+      if (!uniqueMap.has(c.name)) {
+        uniqueMap.set(c.name, c);
+      } else {
+        // Prefer "Current" version if available
+        const existing = uniqueMap.get(c.name)!;
+        if (c.version.toLowerCase() === 'current' && existing.version.toLowerCase() !== 'current') {
+          uniqueMap.set(c.name, c);
+        }
+      }
+    });
+    return Array.from(uniqueMap.values());
+  };
+
   const loadData = async () => {
     const all = await getCharacters(false); // Faster loading without history
-    setMembers(all.filter(c => c.faction === faction).sort((a, b) => b.overallElo - a.overallElo));
+    const factionMembers = all.filter(c => c.faction === faction);
+    // Store all versions for stats calculation
+    setAllFactionMembers(factionMembers);
+    // Show only unique characters (one per name) for display
+    const uniqueMembers = getUniqueCharacters(factionMembers);
+    setMembers(uniqueMembers.sort((a, b) => b.overallElo - a.overallElo));
     setAvailableRecruits(all.filter(c => c.faction !== faction).sort((a, b) => a.name.localeCompare(b.name)));
   };
 
   const handleDeleteFaction = async () => {
-    if (members.length === 0) {
+    if (allFactionMembers.length === 0) {
       if (confirm(`Delete faction "${faction}"? This will also remove its description.`)) {
         await deleteFaction(faction);
         onDataChange();
         onBack(); // Go back to organizations list
       }
     } else {
-      const memberCount = members.length;
+      const memberCount = allFactionMembers.length;
       if (confirm(`⚠️ WARNING: Delete faction "${faction}"?\n\nThis will DELETE ALL ${memberCount} MEMBERS in this faction!\n\nThis action cannot be undone. Are you absolutely sure?`)) {
         await deleteFaction(faction);
         onDataChange();
@@ -62,8 +85,8 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
     }
   };
 
-  const avgElo = members.length > 0 
-    ? Math.round(members.reduce((acc, c) => acc + c.overallElo, 0) / members.length) 
+  const avgElo = allFactionMembers.length > 0 
+    ? Math.round(allFactionMembers.reduce((acc, c) => acc + c.overallElo, 0) / allFactionMembers.length) 
     : 0;
   
   const avgTier = getTier(avgElo);
@@ -195,6 +218,8 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
                 onClick={() => onSelectCharacter(char.id)}
                 onEdit={onEditCharacter}
                 onDelete={onDeleteCharacter}
+                hideVersionBadge={true}
+                showStats={false}
               />
               <button 
                 onClick={(e) => handleKick(e, char)}

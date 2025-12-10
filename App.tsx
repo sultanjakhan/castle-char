@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { VotingArena } from './components/VotingArena';
 import { Leaderboard } from './components/Leaderboard';
@@ -15,14 +15,54 @@ import { saveCharacterDetails, addCharacter, getCharacters, deleteCharacter } fr
 import { PlusCircle, Download } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>(AppView.RANDOM_BATTLE);
-  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-  const [selectedFaction, setSelectedFaction] = useState<string | null>(null);
+  // Initialize from URL or default to RANDOM_BATTLE
+  const getInitialView = (): AppView => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view') as AppView;
+    return view && Object.values(AppView).includes(view) ? view : AppView.RANDOM_BATTLE;
+  };
+
+  const getInitialCharacterId = (): string | null => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('character') || null;
+  };
+
+  const getInitialFaction = (): string | null => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('faction') || null;
+  };
+
+  const [currentView, setCurrentView] = useState<AppView>(getInitialView());
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(getInitialCharacterId());
+  const [selectedFaction, setSelectedFaction] = useState<string | null>(getInitialFaction());
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorCharacter, setEditorCharacter] = useState<Character | null>(null); // null = new, object = edit
 
   // Force a re-render when data changes
   const [dataVersion, setDataVersion] = useState(0);
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (currentView !== AppView.RANDOM_BATTLE) {
+      params.set('view', currentView);
+    }
+    
+    if (selectedCharacterId) {
+      params.set('character', selectedCharacterId);
+    }
+    
+    if (selectedFaction) {
+      params.set('faction', selectedFaction);
+    }
+
+    const newUrl = params.toString() 
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname;
+    
+    window.history.replaceState({}, '', newUrl);
+  }, [currentView, selectedCharacterId, selectedFaction]);
 
   const handleNavigate = (view: AppView) => {
     setCurrentView(view);
