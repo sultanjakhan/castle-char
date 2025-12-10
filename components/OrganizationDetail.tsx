@@ -12,9 +12,11 @@ interface OrganizationDetailProps {
   onBack: () => void;
   onSelectCharacter: (id: string) => void;
   onDataChange: () => void;
+  onEditCharacter?: (character: Character) => void;
+  onDeleteCharacter?: (character: Character) => void;
 }
 
-export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction, onBack, onSelectCharacter, onDataChange }) => {
+export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction, onBack, onSelectCharacter, onDataChange, onEditCharacter, onDeleteCharacter }) => {
   const [members, setMembers] = useState<Character[]>([]);
   const [availableRecruits, setAvailableRecruits] = useState<Character[]>([]);
   const [isRecruiting, setIsRecruiting] = useState(false);
@@ -191,10 +193,12 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
               <CharacterCard 
                 character={char} 
                 onClick={() => onSelectCharacter(char.id)}
+                onEdit={onEditCharacter}
+                onDelete={onDeleteCharacter}
               />
               <button 
                 onClick={(e) => handleKick(e, char)}
-                className="absolute top-2 right-2 bg-black/80 p-1.5 rounded text-neutral-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity border border-neutral-800"
+                className="absolute bottom-16 right-2 bg-black/80 p-1.5 rounded text-neutral-500 hover:text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity border border-neutral-800 z-10"
                 title="Remove from Organization"
               >
                 <Trash2 className="w-3 h-3" />

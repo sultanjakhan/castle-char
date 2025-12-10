@@ -2,13 +2,14 @@
 import React from 'react';
 import { Character, Tier } from '../types';
 import { TIER_THRESHOLDS, TIER_COLORS } from '../constants';
-import { Info, Pencil } from 'lucide-react';
+import { Info, Pencil, Trash2, MoreVertical } from 'lucide-react';
 import { ImageWithFallback } from './ImageWithFallback';
 
 interface CharacterCardProps {
   character: Character;
   onClick?: () => void;
   onEdit?: (character: Character) => void;
+  onDelete?: (character: Character) => void;
   showStats?: boolean;
   animate?: boolean;
   selected?: boolean;
@@ -33,6 +34,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
   character, 
   onClick, 
   onEdit,
+  onDelete,
   showStats = false,
   animate = false,
   selected = false,
@@ -41,6 +43,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 }) => {
   const tier = getTier(character.overallElo);
   const tierColor = TIER_COLORS[tier];
+  const [showMenu, setShowMenu] = React.useState(false);
 
   return (
     <div 
@@ -65,18 +68,64 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
         </div>
       )}
 
-      {/* Edit Button (Only visible if onEdit is provided) */}
-      {onEdit && (
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(character);
-          }}
-          className="absolute top-12 right-3 z-20 p-1.5 rounded bg-black/80 hover:bg-white hover:text-black text-neutral-400 border border-neutral-700 transition-colors opacity-0 group-hover:opacity-100"
-          title="Edit Character"
-        >
-          <Pencil className="w-3 h-3" />
-        </button>
+      {/* Action Menu Button (Top Right) */}
+      {(onEdit || onDelete) && (
+        <div className="absolute top-3 right-3 z-20">
+          {!hideVersionBadge && (onEdit || onDelete) && (
+            <div className="absolute top-0 right-0" />
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            className="p-1.5 rounded bg-black/90 hover:bg-black text-neutral-400 hover:text-white border border-neutral-700 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+            title="Actions"
+          >
+            <MoreVertical className="w-3 h-3" />
+          </button>
+          
+          {/* Dropdown Menu */}
+          {showMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-30" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                }}
+              />
+              <div className="absolute top-8 right-0 z-40 bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl overflow-hidden min-w-[120px]">
+                {onEdit && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(character);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white flex items-center gap-2 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" /> Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Delete ${character.name}? This cannot be undone.`)) {
+                        onDelete(character);
+                      }
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 flex items-center gap-2 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" /> Delete
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {/* Image Container */}

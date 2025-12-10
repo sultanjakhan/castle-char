@@ -8,9 +8,11 @@ import { Building2, ChevronRight, Eye } from 'lucide-react';
 interface OrganizationsProps {
   onSelectCharacter: (id: string) => void;
   onSelectFaction: (faction: string) => void;
+  onEditCharacter?: (character: Character) => void;
+  onDeleteCharacter?: (character: Character) => void;
 }
 
-export const Organizations: React.FC<OrganizationsProps> = ({ onSelectCharacter, onSelectFaction }) => {
+export const Organizations: React.FC<OrganizationsProps> = ({ onSelectCharacter, onSelectFaction, onEditCharacter, onDeleteCharacter }) => {
   const [characters, setCharacters] = useState<Character[]>([]);
 
   useEffect(() => {
@@ -70,6 +72,8 @@ export const Organizations: React.FC<OrganizationsProps> = ({ onSelectCharacter,
                     key={char.id} 
                     character={char} 
                     onClick={() => onSelectCharacter(char.id)}
+                    onEdit={onEditCharacter}
+                    onDelete={onDeleteCharacter}
                   />
                 ))}
                 {factionChars.length > 5 && (

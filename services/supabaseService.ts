@@ -189,14 +189,13 @@ export const saveCharacters = async (characters: Character[]): Promise<void> => 
   }
 
   try {
-    // Update all characters
-    for (const char of characters) {
-      const { error } = await supabase
-        .from('characters')
-        .upsert(characterToDb(char), { onConflict: 'id' });
+    // Batch upsert all characters at once (much faster than loop)
+    const dbData = characters.map(characterToDb);
+    const { error } = await supabase
+      .from('characters')
+      .upsert(dbData, { onConflict: 'id' });
 
-      if (error) throw error;
-    }
+    if (error) throw error;
   } catch (error) {
     console.error('Error saving characters:', error);
     // Fallback to localStorage

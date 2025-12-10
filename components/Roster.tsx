@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Character } from '../types';
-import { getCharacters, deleteCharacter } from '../services/supabaseService';
+import { getCharacters } from '../services/supabaseService';
 import { CharacterCard } from './CharacterCard';
-import { Search, Users, Trash2 } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 
 interface RosterProps {
   onEditCharacter: (character: Character) => void;
   onSelectCharacter: (id: string) => void;
   onRefresh: () => void;
+  onDeleteCharacter?: (character: Character) => void;
 }
 
-export const Roster: React.FC<RosterProps> = ({ onEditCharacter, onSelectCharacter, onRefresh }) => {
+export const Roster: React.FC<RosterProps> = ({ onEditCharacter, onSelectCharacter, onRefresh, onDeleteCharacter }) => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [search, setSearch] = useState('');
 
@@ -23,10 +24,9 @@ export const Roster: React.FC<RosterProps> = ({ onEditCharacter, onSelectCharact
     loadCharacters();
   }, []);
 
-  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
-    e.stopPropagation();
-    if (confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) {
-      await deleteCharacter(id);
+  const handleDelete = async (char: Character) => {
+    if (onDeleteCharacter) {
+      await onDeleteCharacter(char);
       const chars = await getCharacters(false); // Faster reload without history
       setCharacters(chars);
       onRefresh();
@@ -81,23 +81,14 @@ export const Roster: React.FC<RosterProps> = ({ onEditCharacter, onSelectCharact
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {displayCharacters.map(char => (
-          <div key={char.id} className="relative group">
-            <CharacterCard 
-              character={char} 
-              onEdit={onEditCharacter}
-              onClick={() => onSelectCharacter(char.id)}
-              hideVersionBadge={true} // Hide version on roster
-            />
-            
-            {/* Delete Button (Only visible on hover) */}
-            <button 
-              onClick={(e) => handleDelete(e, char.id, char.name)}
-              className="absolute top-12 left-3 z-20 p-1.5 rounded bg-black/80 hover:bg-red-600 text-neutral-400 hover:text-white border border-neutral-700 transition-colors opacity-0 group-hover:opacity-100"
-              title="Delete Character"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
-          </div>
+          <CharacterCard 
+            key={char.id}
+            character={char} 
+            onEdit={onEditCharacter}
+            onDelete={onDeleteCharacter ? () => handleDelete(char) : undefined}
+            onClick={() => onSelectCharacter(char.id)}
+            hideVersionBadge={true} // Hide version on roster
+          />
         ))}
       </div>
       

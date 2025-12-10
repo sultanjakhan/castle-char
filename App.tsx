@@ -11,7 +11,7 @@ import { Roster } from './components/Roster';
 import { Organizations } from './components/Organizations';
 import { OrganizationDetail } from './components/OrganizationDetail';
 import { AppView, Character } from './types';
-import { saveCharacterDetails, addCharacter, getCharacters } from './services/supabaseService';
+import { saveCharacterDetails, addCharacter, getCharacters, deleteCharacter } from './services/supabaseService';
 import { PlusCircle, Download } from 'lucide-react';
 
 export default function App() {
@@ -69,6 +69,13 @@ export default function App() {
   const openEditCharacter = (char: Character) => {
     setEditorCharacter(char);
     setIsEditorOpen(true);
+  };
+
+  const handleDeleteCharacter = async (char: Character) => {
+    if (confirm(`Are you sure you want to delete ${char.name}? This cannot be undone.`)) {
+      await deleteCharacter(char.id);
+      refreshData();
+    }
   };
 
   const handleSaveCharacter = async (data: any) => {
@@ -131,6 +138,7 @@ export default function App() {
             onEditCharacter={openEditCharacter} 
             onSelectCharacter={handleSelectCharacter}
             onRefresh={refreshData}
+            onDeleteCharacter={handleDeleteCharacter}
           />
         )}
 
@@ -139,6 +147,8 @@ export default function App() {
             key={dataVersion} 
             onSelectCharacter={handleSelectCharacter}
             onSelectFaction={handleSelectFaction}
+            onEditCharacter={openEditCharacter}
+            onDeleteCharacter={handleDeleteCharacter}
           />
         )}
 
@@ -148,6 +158,8 @@ export default function App() {
             onBack={() => handleNavigate(AppView.ORGANIZATIONS)}
             onSelectCharacter={handleSelectCharacter}
             onDataChange={refreshData}
+            onEditCharacter={openEditCharacter}
+            onDeleteCharacter={handleDeleteCharacter}
           />
         )}
 
