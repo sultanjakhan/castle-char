@@ -156,8 +156,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           )}
         </div>
 
-        {/* Overlay Info (Visible on hover on desktop) */}
-        {!disabled && onClick && (
+        {/* Overlay Info (Visible on hover on desktop) - Disabled by default, can be enabled with showDescription prop */}
+        {false && !disabled && onClick && (
           <div className="hidden md:block absolute inset-0 bg-black/90 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center pointer-events-none">
               <Info className="w-8 h-8 text-red-600 mb-2" />
               <p className="text-sm text-neutral-300 leading-snug">{character.description}</p>

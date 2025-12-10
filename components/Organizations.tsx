@@ -33,6 +33,23 @@ export const Organizations: React.FC<OrganizationsProps> = ({ onSelectCharacter,
     return groups;
   };
 
+  // Get unique characters by name (only one version per character)
+  const getUniqueCharacters = (chars: Character[]): Character[] => {
+    const uniqueMap = new Map<string, Character>();
+    chars.forEach(c => {
+      if (!uniqueMap.has(c.name)) {
+        uniqueMap.set(c.name, c);
+      } else {
+        // Prefer "Current" version if available
+        const existing = uniqueMap.get(c.name)!;
+        if (c.version.toLowerCase() === 'current' && existing.version.toLowerCase() !== 'current') {
+          uniqueMap.set(c.name, c);
+        }
+      }
+    });
+    return Array.from(uniqueMap.values());
+  };
+
   const grouped = getGroupedCharacters();
   const sortedFactions = Object.keys(grouped).sort();
 
@@ -61,27 +78,29 @@ export const Organizations: React.FC<OrganizationsProps> = ({ onSelectCharacter,
                   className="text-xl font-bold text-white uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:text-red-500 transition-colors group/title"
                 >
                   <span className="text-red-600 group-hover/title:text-red-500">{faction}</span> 
-                  <span className="bg-neutral-800 text-neutral-400 text-[10px] px-2 py-1 rounded-full">{factionChars.length} Members</span>
+                  <span className="bg-neutral-800 text-neutral-400 text-[10px] px-2 py-1 rounded-full">{getUniqueCharacters(factionChars).length} Members</span>
                   <ChevronRight className="w-4 h-4 text-neutral-600 group-hover/title:text-white group-hover/title:translate-x-1 transition-all" />
                 </h3>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 relative z-10">
-                {factionChars.slice(0, 5).map(char => (
+                {getUniqueCharacters(factionChars).slice(0, 5).map(char => (
                   <CharacterCard 
                     key={char.id} 
                     character={char} 
                     onClick={() => onSelectCharacter(char.id)}
                     onEdit={onEditCharacter}
                     onDelete={onDeleteCharacter}
+                    hideVersionBadge={true}
+                    showStats={false}
                   />
                 ))}
-                {factionChars.length > 5 && (
+                {getUniqueCharacters(factionChars).length > 5 && (
                    <div 
                      onClick={() => onSelectFaction(faction)}
                      className="flex flex-col items-center justify-center border border-neutral-800 rounded-xl bg-black/20 text-neutral-500 hover:bg-red-900/20 hover:text-red-500 hover:border-red-900 transition-all cursor-pointer"
                    >
-                      <span className="text-2xl font-bold">+{factionChars.length - 5}</span>
+                      <span className="text-2xl font-bold">+{getUniqueCharacters(factionChars).length - 5}</span>
                       <span className="text-[10px] uppercase">More</span>
                    </div>
                 )}
