@@ -68,12 +68,9 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
         </div>
       )}
 
-      {/* Action Menu Button (Top Right) */}
+      {/* Action Menu Button (Top Right, below version badge if shown) */}
       {(onEdit || onDelete) && (
-        <div className="absolute top-3 right-3 z-20">
-          {!hideVersionBadge && (onEdit || onDelete) && (
-            <div className="absolute top-0 right-0" />
-          )}
+        <div className={`absolute z-20 ${hideVersionBadge ? 'top-3 right-3' : 'top-12 right-3'}`}>
           <button
             onClick={(e) => {
               e.stopPropagation();
