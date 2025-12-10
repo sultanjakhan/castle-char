@@ -119,7 +119,7 @@ export const VotingArena: React.FC<VotingArenaProps> = ({ mode, onVoteComplete }
 
   useEffect(() => {
     const loadCharacters = async () => {
-      const chars = await getCharacters();
+      const chars = await getCharacters(false); // Don't load history for faster loading
       setCharacters(chars);
     };
     loadCharacters();

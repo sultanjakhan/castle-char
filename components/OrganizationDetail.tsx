@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Character, Faction } from '../types';
-import { getCharacters, saveCharacterDetails, getOrgDescription, saveOrgDescription, addCharacter } from '../services/supabaseService';
+import { getCharacters, saveCharacterDetails, getOrgDescription, saveOrgDescription, addCharacter, deleteFaction } from '../services/supabaseService';
 import { CharacterCard, getTier } from './CharacterCard';
-import { ArrowLeft, UserPlus, TrendingUp, Users, Shield, Zap, Pencil, Trash2, PlusCircle, Save } from 'lucide-react';
+import { ArrowLeft, UserPlus, TrendingUp, Users, Shield, Zap, Pencil, Trash2, PlusCircle, Save, AlertTriangle } from 'lucide-react';
 import { TIER_COLORS } from '../constants';
 import { CharacterEditor } from './CharacterEditor';
 
@@ -38,9 +38,26 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
   }, [faction]);
 
   const loadData = async () => {
-    const all = await getCharacters();
+    const all = await getCharacters(false); // Faster loading without history
     setMembers(all.filter(c => c.faction === faction).sort((a, b) => b.overallElo - a.overallElo));
     setAvailableRecruits(all.filter(c => c.faction !== faction).sort((a, b) => a.name.localeCompare(b.name)));
+  };
+
+  const handleDeleteFaction = async () => {
+    if (members.length === 0) {
+      if (confirm(`Delete faction "${faction}"? This will also remove its description.`)) {
+        await deleteFaction(faction);
+        onDataChange();
+        onBack(); // Go back to organizations list
+      }
+    } else {
+      const memberCount = members.length;
+      if (confirm(`⚠️ WARNING: Delete faction "${faction}"?\n\nThis will DELETE ALL ${memberCount} MEMBERS in this faction!\n\nThis action cannot be undone. Are you absolutely sure?`)) {
+        await deleteFaction(faction);
+        onDataChange();
+        onBack(); // Go back to organizations list
+      }
+    }
   };
 
   const avgElo = members.length > 0 
@@ -147,7 +164,13 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-neutral-800 flex justify-end">
+        <div className="mt-8 pt-6 border-t border-neutral-800 flex justify-between items-center">
+           <button 
+             onClick={handleDeleteFaction}
+             className="flex items-center gap-2 bg-neutral-800 hover:bg-red-900 text-neutral-400 hover:text-red-400 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors border border-neutral-700 hover:border-red-700"
+           >
+             <AlertTriangle className="w-4 h-4" /> Delete Faction
+           </button>
            <button 
              onClick={() => setIsRecruiting(true)}
              className="flex items-center gap-2 bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors shadow-lg"

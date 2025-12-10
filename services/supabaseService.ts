@@ -60,7 +60,7 @@ const characterToDb = (char: Character) => ({
   losses: char.losses
 });
 
-export const getCharacters = async (): Promise<Character[]> => {
+export const getCharacters = async (includeHistory: boolean = false): Promise<Character[]> => {
   if (!supabase) {
     // Fallback to localStorage
     const stored = localStorage.getItem('castle_ranker_data_v9_visible');
@@ -71,7 +71,7 @@ export const getCharacters = async (): Promise<Character[]> => {
   }
 
   try {
-    // Fetch characters
+    // Fetch characters (fast query)
     const { data: characters, error: charsError } = await supabase
       .from('characters')
       .select('*')
@@ -84,35 +84,39 @@ export const getCharacters = async (): Promise<Character[]> => {
       return await initializeDefaultCharacters();
     }
 
-    // Fetch match history for all characters
-    const characterIds = characters.map(c => c.id);
-    const { data: matchHistory, error: historyError } = await supabase
-      .from('match_history')
-      .select('*')
-      .in('character_id', characterIds)
-      .order('created_at', { ascending: false })
-      .limit(20); // Limit per character
+    // Only fetch match history if requested (for performance)
+    let historyByCharacter = new Map<string, MatchResult[]>();
+    if (includeHistory) {
+      const characterIds = characters.map(c => c.id);
+      // Limit total history records for performance
+      const { data: matchHistory, error: historyError } = await supabase
+        .from('match_history')
+        .select('*')
+        .in('character_id', characterIds)
+        .order('created_at', { ascending: false })
+        .limit(100); // Total limit, not per character
 
-    if (historyError) {
-      console.warn('Error fetching match history:', historyError);
-    }
-
-    // Group match history by character
-    const historyByCharacter = new Map<string, MatchResult[]>();
-    if (matchHistory) {
-      matchHistory.forEach(match => {
-        if (!historyByCharacter.has(match.character_id)) {
-          historyByCharacter.set(match.character_id, []);
-        }
-        historyByCharacter.get(match.character_id)!.push({
-          opponentId: match.opponent_id,
-          opponentName: match.opponent_name,
-          result: match.result as 'WIN' | 'LOSS',
-          eloChange: match.elo_change,
-          date: new Date(match.created_at).getTime(),
-          scenarioDescription: match.scenario_description
+      if (historyError) {
+        console.warn('Error fetching match history:', historyError);
+      } else if (matchHistory) {
+        // Group and limit per character
+        matchHistory.forEach(match => {
+          if (!historyByCharacter.has(match.character_id)) {
+            historyByCharacter.set(match.character_id, []);
+          }
+          const charHistory = historyByCharacter.get(match.character_id)!;
+          if (charHistory.length < 10) { // Max 10 per character
+            charHistory.push({
+              opponentId: match.opponent_id,
+              opponentName: match.opponent_name,
+              result: match.result as 'WIN' | 'LOSS',
+              eloChange: match.elo_change,
+              date: new Date(match.created_at).getTime(),
+              scenarioDescription: match.scenario_description
+            });
+          }
         });
-      });
+      }
     }
 
     return characters.map(char => 
@@ -200,8 +204,8 @@ export const saveCharacters = async (characters: Character[]): Promise<void> => 
   }
 };
 
-export const getCharacterById = async (id: string): Promise<Character | undefined> => {
-  const characters = await getCharacters();
+export const getCharacterById = async (id: string, includeHistory: boolean = true): Promise<Character | undefined> => {
+  const characters = await getCharacters(includeHistory);
   return characters.find(c => c.id === id);
 };
 
@@ -281,6 +285,7 @@ export const addCharacter = async (characterData: any): Promise<void> => {
 export const deleteCharacter = async (id: string): Promise<void> => {
   if (supabase) {
     try {
+      // Delete character (match_history will be deleted automatically via CASCADE)
       const { error } = await supabase
         .from('characters')
         .delete()
@@ -298,6 +303,40 @@ export const deleteCharacter = async (id: string): Promise<void> => {
     const characters = await getCharacters();
     const filtered = characters.filter(c => c.id !== id);
     await saveCharacters(filtered);
+  }
+};
+
+// Delete all characters in a faction
+export const deleteFaction = async (faction: string): Promise<void> => {
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('characters')
+        .delete()
+        .eq('faction', faction);
+
+      if (error) throw error;
+
+      // Also delete organization metadata
+      await supabase
+        .from('organization_metadata')
+        .delete()
+        .eq('faction', faction);
+    } catch (error) {
+      console.error('Error deleting faction:', error);
+    }
+  } else {
+    const characters = await getCharacters();
+    const filtered = characters.filter(c => c.faction !== faction);
+    await saveCharacters(filtered);
+    
+    // Remove from localStorage metadata
+    const stored = localStorage.getItem('castle_ranker_org_meta');
+    if (stored) {
+      const meta = JSON.parse(stored);
+      delete meta[faction];
+      localStorage.setItem('castle_ranker_org_meta', JSON.stringify(meta));
+    }
   }
 };
 

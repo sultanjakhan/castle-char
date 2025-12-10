@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { Character, StatCategory, Tier } from '../types';
-import { getCharacters } from '../services/supabaseService';
+import { getCharacters, deleteCharacter } from '../services/supabaseService';
 import { getTier } from './CharacterCard';
 import { TIER_COLORS, STAT_LABELS } from '../constants';
-import { Search, User, Pencil } from 'lucide-react';
+import { Search, User, Pencil, Trash2 } from 'lucide-react';
 
 interface LeaderboardProps {
   onSelectCharacter: (id: string) => void;
   onEditCharacter: (character: Character) => void;
+  onRefresh?: () => void;
 }
 
-export const Leaderboard: React.FC<LeaderboardProps> = ({ onSelectCharacter, onEditCharacter }) => {
+export const Leaderboard: React.FC<LeaderboardProps> = ({ onSelectCharacter, onEditCharacter, onRefresh }) => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [sortBy, setSortBy] = useState<StatCategory>(StatCategory.OVERALL);
   const [filterText, setFilterText] = useState('');
   
   useEffect(() => {
     const loadCharacters = async () => {
-      const chars = await getCharacters();
+      const chars = await getCharacters(false); // Don't load history for faster loading
       setCharacters(chars);
     };
     loadCharacters();
   }, []);
+
+  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) {
+      await deleteCharacter(id);
+      const chars = await getCharacters(false);
+      setCharacters(chars);
+      if (onRefresh) onRefresh();
+    }
+  };
 
   const sortedCharacters = [...characters]
     .filter(c => c.name.toLowerCase().includes(filterText.toLowerCase()))
@@ -120,8 +131,16 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onSelectCharacter, onE
                                onEditCharacter(char);
                              }}
                              className="opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-white transition-opacity p-1"
+                             title="Edit character"
                            >
                               <Pencil className="w-3 h-3" />
+                           </button>
+                           <button 
+                             onClick={(e) => handleDelete(e, char.id, char.name)}
+                             className="opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-red-500 transition-opacity p-1"
+                             title="Delete character"
+                           >
+                              <Trash2 className="w-3 h-3" />
                            </button>
                         </div>
                         <div className="text-[9px] text-neutral-600 uppercase font-mono">{char.version}</div>

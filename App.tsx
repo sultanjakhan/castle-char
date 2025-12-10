@@ -117,6 +117,7 @@ export default function App() {
             key={dataVersion} 
             onSelectCharacter={handleSelectCharacter} 
             onEditCharacter={openEditCharacter}
+            onRefresh={refreshData}
           />
         )}
 

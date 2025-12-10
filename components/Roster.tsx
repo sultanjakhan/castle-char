@@ -17,7 +17,7 @@ export const Roster: React.FC<RosterProps> = ({ onEditCharacter, onSelectCharact
 
   useEffect(() => {
     const loadCharacters = async () => {
-      const chars = await getCharacters();
+      const chars = await getCharacters(false); // Don't load history for faster loading
       setCharacters(chars);
     };
     loadCharacters();
@@ -27,7 +27,7 @@ export const Roster: React.FC<RosterProps> = ({ onEditCharacter, onSelectCharact
     e.stopPropagation();
     if (confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) {
       await deleteCharacter(id);
-      const chars = await getCharacters();
+      const chars = await getCharacters(false); // Faster reload without history
       setCharacters(chars);
       onRefresh();
     }

@@ -23,8 +23,8 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
       const char = await getCharacterById(characterId);
       if (char) {
          setCharacter(char);
-         // Fetch all versions based on name matching
-         const all = await getCharacters();
+         // Fetch all versions based on name matching (with history for profile view)
+         const all = await getCharacters(true); // Load history for profile
          const related = all.filter(c => c.name.toLowerCase() === char.name.toLowerCase());
          // Sort versions: Current first, then others alphabetically or by some logic
          setAllVersions(related);
