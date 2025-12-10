@@ -132,58 +132,64 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ character, onS
               />
             </div>
             <div>
-              <label className="block text-xs uppercase text-neutral-500 mb-1 flex justify-between">
-                Faction 
-                {!isCustomFaction && (
-                  <button 
-                    type="button" 
-                    onClick={() => toggleCustomFaction(true)}
-                    className="text-red-500 hover:text-red-400 flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> New
-                  </button>
-                )}
-                {isCustomFaction && (
-                  <button 
-                     type="button" 
-                     onClick={() => toggleCustomFaction(false)}
-                     className="text-neutral-500 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                )}
+              <label className="block text-xs uppercase text-neutral-500 mb-1">
+                Faction
               </label>
               
               {isCustomFaction ? (
-                <input 
-                  required
-                  type="text"
-                  value={formData.faction}
-                  onChange={e => setFormData({...formData, faction: e.target.value})}
-                  className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none"
-                  placeholder="Enter custom faction..."
-                  autoFocus
-                />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      required
+                      type="text"
+                      value={formData.faction}
+                      onChange={e => setFormData({...formData, faction: e.target.value})}
+                      className="flex-1 bg-black border border-red-500 rounded p-2 text-white focus:border-red-400 outline-none"
+                      placeholder="Enter new faction name (e.g. 'Shadow Syndicate')"
+                      autoFocus
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => toggleCustomFaction(false)}
+                      className="px-3 py-2 bg-neutral-800 text-neutral-400 hover:text-white rounded text-xs"
+                      title="Cancel and use existing faction"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-neutral-600">Creating new faction: "{formData.faction || '...'}"</p>
+                </div>
               ) : (
-                <select 
-                  value={formData.faction}
-                  onChange={e => setFormData({...formData, faction: e.target.value})}
-                  className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none text-sm"
-                >
-                  {availableFactions.length > 0 ? (
-                    availableFactions.map(f => (
-                      <option key={f} value={f}>{f}</option>
-                    ))
-                  ) : (
-                    Object.values(Faction).map(f => (
-                      <option key={f} value={f}>{f}</option>
-                    ))
-                  )}
-                  {/* Fallback for custom faction not in list yet */}
-                  {formData.faction && !availableFactions.includes(formData.faction) && !Object.values(Faction).includes(formData.faction as Faction) && (
-                    <option value={formData.faction} hidden>{formData.faction}</option>
-                  )}
-                </select>
+                <div className="space-y-2">
+                  <select 
+                    value={formData.faction}
+                    onChange={e => {
+                      if (e.target.value === '__CREATE_NEW__') {
+                        toggleCustomFaction(true);
+                      } else {
+                        setFormData({...formData, faction: e.target.value});
+                      }
+                    }}
+                    className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none text-sm"
+                  >
+                    {availableFactions.length > 0 ? (
+                      availableFactions.map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))
+                    ) : (
+                      Object.values(Faction).map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))
+                    )}
+                    {/* Fallback for custom faction not in list yet */}
+                    {formData.faction && !availableFactions.includes(formData.faction) && !Object.values(Faction).includes(formData.faction as Faction) && (
+                      <option value={formData.faction} hidden>{formData.faction}</option>
+                    )}
+                    <option value="__CREATE_NEW__" className="bg-red-900 text-white">
+                      ➕ Create New Faction...
+                    </option>
+                  </select>
+                </div>
               )}
             </div>
           </div>
