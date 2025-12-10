@@ -150,18 +150,19 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
     }
 
     // Update DB with recalculated wins/losses to keep them in sync
+    // BUT: Only update if we actually have match history data, otherwise keep DB values
     const charactersToUpdate = characters
       .map(char => {
-        const stats = winsLossesByCharacter.get(char.id) || { wins: 0, losses: 0 };
-        // Only update if different from DB
-        if (char.wins !== stats.wins || char.losses !== stats.losses) {
+        const stats = winsLossesByCharacter.get(char.id);
+        // Only update if we have stats from match_history AND they differ from DB
+        if (stats && (char.wins !== stats.wins || char.losses !== stats.losses)) {
           return { id: char.id, wins: stats.wins, losses: stats.losses };
         }
         return null;
       })
       .filter(Boolean) as Array<{ id: string; wins: number; losses: number }>;
 
-    // Batch update wins/losses in DB if needed
+    // Batch update wins/losses in DB if needed (but don't overwrite with zeros if no history)
     if (charactersToUpdate.length > 0) {
       try {
         await Promise.all(
@@ -172,6 +173,7 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
               .eq('id', update.id)
           )
         );
+        console.log(`Updated wins/losses for ${charactersToUpdate.length} characters`);
       } catch (error) {
         console.warn('Error syncing wins/losses to DB:', error);
       }
@@ -179,19 +181,28 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
 
     const result = characters.map(char => {
       const history = historyByCharacter.get(char.id) || [];
-      const stats = winsLossesByCharacter.get(char.id) || { wins: char.wins || 0, losses: char.losses || 0 };
+      const stats = winsLossesByCharacter.get(char.id);
       
-      // Use recalculated wins/losses from match_history instead of DB values
+      // Use recalculated wins/losses from match_history if available, otherwise use DB values
       const character = dbToCharacter(char, history);
-      character.wins = stats.wins;
-      character.losses = stats.losses;
+      if (stats) {
+        character.wins = stats.wins;
+        character.losses = stats.losses;
+      } else {
+        // Keep DB values if no match history found
+        character.wins = char.wins || 0;
+        character.losses = char.losses || 0;
+      }
       
       return character;
     });
     
-    // Debug: Log if we're missing expected characters
-    if (result.length < 30) {
-      console.warn(`Only ${result.length} characters loaded. Expected more.`);
+    // Debug: Log character count and check for expected characters
+    console.log(`Loaded ${result.length} characters from DB`);
+    const expectedChars = ['kim-shin-current', 'seo-jintae', 'choi-minwook'];
+    const foundExpected = result.filter(c => expectedChars.includes(c.id));
+    if (foundExpected.length < expectedChars.length) {
+      console.warn(`Missing expected characters. Found: ${foundExpected.map(c => c.id).join(', ')}`);
     }
     
     return result;
