@@ -1,0 +1,5 @@
+{
+  "name": "Castle Character Ranker",
+  "description": "A community-driven Elo ranking system for characters from the manhwa Castle, featuring scenario battles and category-specific stats.",
+  "requestFramePermissions": []
+}

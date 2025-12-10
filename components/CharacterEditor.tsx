@@ -1,0 +1,202 @@
+
+import React, { useState, useEffect } from 'react';
+import { Character, Faction } from '../types';
+import { X, Save, Plus } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+
+interface CharacterEditorProps {
+  character?: Character | null; // If null, we are adding new
+  onSave: (data: any) => void;
+  onClose: () => void;
+}
+
+export const CharacterEditor: React.FC<CharacterEditorProps> = ({ character, onSave, onClose }) => {
+  const [formData, setFormData] = useState({
+    id: '',
+    name: '',
+    version: '',
+    faction: '' as string,
+    imageUrl: '',
+    description: ''
+  });
+  
+  const [isCustomFaction, setIsCustomFaction] = useState(false);
+
+  useEffect(() => {
+    if (character) {
+      // If character has an ID, it's an edit. If it has no ID but has props, it's a "New Version" template
+      const isKnown = Object.values(Faction).includes(character.faction as Faction);
+      setIsCustomFaction(!isKnown && !!character.faction);
+
+      setFormData({
+        id: character.id || uuidv4(),
+        name: character.name || '',
+        version: character.version || '',
+        faction: character.faction || Faction.OTHER,
+        imageUrl: character.imageUrl || '',
+        description: character.description || ''
+      });
+    } else {
+      setIsCustomFaction(false);
+      setFormData({
+        id: uuidv4(),
+        name: '',
+        version: 'Current',
+        faction: Faction.OTHER,
+        imageUrl: '',
+        description: ''
+      });
+    }
+  }, [character]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  const toggleCustomFaction = (isCustom: boolean) => {
+    setIsCustomFaction(isCustom);
+    if (isCustom) {
+      setFormData(prev => ({ ...prev, faction: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, faction: Faction.OTHER }));
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+          <h2 className="text-lg font-bold text-white uppercase tracking-wider">
+            {character && character.id ? 'Edit Character' : 'Add New Character'}
+          </h2>
+          <button onClick={onClose} className="text-neutral-500 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto">
+          <div>
+            <label className="block text-xs uppercase text-neutral-500 mb-1">Name</label>
+            <input 
+              required
+              type="text" 
+              value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value})}
+              className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none"
+              placeholder="e.g. Kim Shin"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs uppercase text-neutral-500 mb-1">Version</label>
+              <input 
+                required
+                type="text" 
+                value={formData.version}
+                onChange={e => setFormData({...formData, version: e.target.value})}
+                className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none"
+                placeholder="e.g. Current"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase text-neutral-500 mb-1 flex justify-between">
+                Faction 
+                {!isCustomFaction && (
+                  <button 
+                    type="button" 
+                    onClick={() => toggleCustomFaction(true)}
+                    className="text-red-500 hover:text-red-400 flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> New
+                  </button>
+                )}
+                {isCustomFaction && (
+                  <button 
+                     type="button" 
+                     onClick={() => toggleCustomFaction(false)}
+                     className="text-neutral-500 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </label>
+              
+              {isCustomFaction ? (
+                <input 
+                  required
+                  type="text"
+                  value={formData.faction}
+                  onChange={e => setFormData({...formData, faction: e.target.value})}
+                  className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none"
+                  placeholder="Enter custom faction..."
+                  autoFocus
+                />
+              ) : (
+                <select 
+                  value={formData.faction}
+                  onChange={e => setFormData({...formData, faction: e.target.value})}
+                  className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none text-sm"
+                >
+                  {Object.values(Faction).map(f => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                  <option value={formData.faction} hidden>{formData.faction}</option>
+                </select>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase text-neutral-500 mb-1">Image URL</label>
+            <input 
+              type="url" 
+              value={formData.imageUrl}
+              onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+              className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none"
+              placeholder="https://..."
+            />
+            <p className="text-[10px] text-neutral-600 mt-1">Leave empty to auto-generate avatar.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase text-neutral-500 mb-1">Description</label>
+            <textarea 
+              required
+              value={formData.description}
+              onChange={e => setFormData({...formData, description: e.target.value})}
+              className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none h-24 resize-none"
+              placeholder="Short bio..."
+            />
+          </div>
+
+          {formData.imageUrl && (
+             <div className="mt-4">
+               <p className="text-xs text-neutral-500 mb-1">Preview</p>
+               <div className="w-20 h-20 rounded overflow-hidden border border-neutral-700">
+                  <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+               </div>
+             </div>
+          )}
+
+          <div className="pt-4 flex gap-3">
+             <button 
+               type="button"
+               onClick={onClose}
+               className="flex-1 py-3 rounded bg-neutral-800 text-neutral-300 hover:bg-neutral-700 font-bold uppercase text-xs"
+             >
+               Cancel
+             </button>
+             <button 
+               type="submit"
+               className="flex-1 py-3 rounded bg-red-600 text-white hover:bg-red-700 font-bold uppercase text-xs flex items-center justify-center gap-2"
+             >
+               <Save className="w-4 h-4" /> Save
+             </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
