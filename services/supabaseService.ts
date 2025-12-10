@@ -123,18 +123,17 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
             }
             
             // Add to history (limit to 10 most recent for display, but only if includeHistory is true)
-            if (includeHistory) {
-              const charHistory = historyByCharacter.get(charId)!;
-              if (charHistory.length < 10) {
-                charHistory.push({
-                  opponentId: match.opponent_id,
-                  opponentName: match.opponent_name,
-                  result: match.result as 'WIN' | 'LOSS',
-                  eloChange: match.elo_change,
-                  date: new Date(match.created_at).getTime(),
-                  scenarioDescription: match.scenario_description
-                });
-              }
+            // Always populate history map for wins/losses calculation, but limit display items
+            const charHistory = historyByCharacter.get(charId)!;
+            if (includeHistory && charHistory.length < 10) {
+              charHistory.push({
+                opponentId: match.opponent_id,
+                opponentName: match.opponent_name,
+                result: match.result as 'WIN' | 'LOSS',
+                eloChange: match.elo_change,
+                date: new Date(match.created_at).getTime(),
+                scenarioDescription: match.scenario_description
+              });
             }
           });
         }
