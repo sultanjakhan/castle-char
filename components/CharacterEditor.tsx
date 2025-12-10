@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Character, Faction } from '../types';
+import { getCharacters } from '../services/supabaseService';
 import { X, Save, Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -21,6 +22,28 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ character, onS
   });
   
   const [isCustomFaction, setIsCustomFaction] = useState(false);
+  const [availableFactions, setAvailableFactions] = useState<string[]>([]);
+
+  // Load all available factions from existing characters
+  const loadFactions = async () => {
+    const characters = await getCharacters();
+    const enumFactions = Object.values(Faction);
+    const customFactions = new Set<string>();
+    
+    characters.forEach(char => {
+      if (char.faction && !enumFactions.includes(char.faction as Faction)) {
+        customFactions.add(char.faction);
+      }
+    });
+    
+    // Combine enum factions with custom ones, sorted
+    const allFactions = [...enumFactions, ...Array.from(customFactions)].sort();
+    setAvailableFactions(allFactions);
+  };
+
+  useEffect(() => {
+    loadFactions();
+  }, []);
 
   useEffect(() => {
     if (character) {
@@ -51,6 +74,14 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ character, onS
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate custom faction
+    if (isCustomFaction && !formData.faction.trim()) {
+      alert('Please enter a faction name');
+      return;
+    }
+    
+    // Save character (onSave is async, but we don't need to wait)
     onSave(formData);
   };
 
@@ -139,10 +170,19 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ character, onS
                   onChange={e => setFormData({...formData, faction: e.target.value})}
                   className="w-full bg-black border border-neutral-700 rounded p-2 text-white focus:border-red-500 outline-none text-sm"
                 >
-                  {Object.values(Faction).map(f => (
-                    <option key={f} value={f}>{f}</option>
-                  ))}
-                  <option value={formData.faction} hidden>{formData.faction}</option>
+                  {availableFactions.length > 0 ? (
+                    availableFactions.map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))
+                  ) : (
+                    Object.values(Faction).map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))
+                  )}
+                  {/* Fallback for custom faction not in list yet */}
+                  {formData.faction && !availableFactions.includes(formData.faction) && !Object.values(Faction).includes(formData.faction as Faction) && (
+                    <option value={formData.faction} hidden>{formData.faction}</option>
+                  )}
                 </select>
               )}
             </div>
