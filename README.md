@@ -2,19 +2,50 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# 🏰 Castle Character Ranker
 
-This contains everything you need to run your app locally.
+Приложение для ранжирования персонажей из замка.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1uimO0Y7lBuOkcUgN6QmonKps0xHST7P8
+## 🚀 Быстрый деплой на Vercel
 
-## Run Locally
+**Самый простой способ (2 минуты):**
 
-**Prerequisites:**  Node.js
+1. Перейди на https://vercel.com
+2. Войди через GitHub (если еще не вошел)
+3. Нажми **"Add New Project"**
+4. Выбери репозиторий `sultanjakhan/castle-char`
+5. Vercel автоматически определит настройки
+6. Нажми **"Deploy"**
 
+Готово! Твой сайт будет доступен по адресу типа `castle-char-xxx.vercel.app`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+📖 Подробные инструкции в [DEPLOY.md](./DEPLOY.md)
+
+## 💻 Запуск локально
+
+**Требования:** Node.js
+
+1. Установи зависимости:
+   ```bash
+   npm install
+   ```
+
+2. (Опционально) Создай `.env.local` и добавь `GEMINI_API_KEY`:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   ```
+
+3. Запусти приложение:
+   ```bash
+   npm run dev
+   ```
+
+Приложение будет доступно на http://localhost:3000
+
+## 📦 Сборка для продакшена
+
+```bash
+npm run build
+```
+
+Собранные файлы будут в папке `dist/`
