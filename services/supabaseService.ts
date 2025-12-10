@@ -14,28 +14,36 @@ const supabase = supabaseUrl && supabaseAnonKey
   : null;
 
 // Helper to convert DB character to app Character
-const dbToCharacter = (dbChar: any, matchHistory: MatchResult[] = []): Character => ({
-  id: dbChar.id,
-  name: dbChar.name,
-  version: dbChar.version,
-  imageUrl: dbChar.image_url || '',
-  description: dbChar.description || '',
-  faction: dbChar.faction,
-  wikiLink: dbChar.wiki_link,
-  overallElo: dbChar.overall_elo || INITIAL_ELO,
-  handToHandElo: dbChar.hand_to_hand_elo || INITIAL_ELO,
-  bladedWeaponsElo: dbChar.bladed_weapons_elo || INITIAL_ELO,
-  firearmsElo: dbChar.firearms_elo || INITIAL_ELO,
-  battleIqElo: dbChar.battle_iq_elo || INITIAL_ELO,
-  physicalStatsElo: dbChar.physical_stats_elo || INITIAL_ELO,
-  speedElo: dbChar.speed_elo || INITIAL_ELO,
-  durabilityElo: dbChar.durability_elo || INITIAL_ELO,
-  staminaElo: dbChar.stamina_elo || INITIAL_ELO,
-  assassinationElo: dbChar.assassination_elo || INITIAL_ELO,
-  wins: dbChar.wins || 0,
-  losses: dbChar.losses || 0,
-  matchHistory
-});
+const dbToCharacter = (dbChar: any, matchHistory: MatchResult[] = []): Character => {
+  // Ensure we have valid data - log if missing critical fields
+  if (!dbChar.id || !dbChar.name) {
+    console.error('Invalid character data:', dbChar);
+  }
+  
+  return {
+    id: dbChar.id || '',
+    name: dbChar.name || 'Unknown',
+    version: dbChar.version || 'Current',
+    imageUrl: dbChar.image_url || '',
+    description: dbChar.description || '',
+    faction: dbChar.faction || 'Other',
+    wikiLink: dbChar.wiki_link || undefined,
+    // Use nullish coalescing to preserve 0 values, but default to INITIAL_ELO for null/undefined
+    overallElo: dbChar.overall_elo != null ? dbChar.overall_elo : INITIAL_ELO,
+    handToHandElo: dbChar.hand_to_hand_elo != null ? dbChar.hand_to_hand_elo : INITIAL_ELO,
+    bladedWeaponsElo: dbChar.bladed_weapons_elo != null ? dbChar.bladed_weapons_elo : INITIAL_ELO,
+    firearmsElo: dbChar.firearms_elo != null ? dbChar.firearms_elo : INITIAL_ELO,
+    battleIqElo: dbChar.battle_iq_elo != null ? dbChar.battle_iq_elo : INITIAL_ELO,
+    physicalStatsElo: dbChar.physical_stats_elo != null ? dbChar.physical_stats_elo : INITIAL_ELO,
+    speedElo: dbChar.speed_elo != null ? dbChar.speed_elo : INITIAL_ELO,
+    durabilityElo: dbChar.durability_elo != null ? dbChar.durability_elo : INITIAL_ELO,
+    staminaElo: dbChar.stamina_elo != null ? dbChar.stamina_elo : INITIAL_ELO,
+    assassinationElo: dbChar.assassination_elo != null ? dbChar.assassination_elo : INITIAL_ELO,
+    wins: dbChar.wins != null ? dbChar.wins : 0,
+    losses: dbChar.losses != null ? dbChar.losses : 0,
+    matchHistory: matchHistory || []
+  };
+};
 
 // Helper to convert app Character to DB format
 const characterToDb = (char: Character) => ({
@@ -89,6 +97,17 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
     }
 
     console.log(`Loaded ${characters.length} characters from DB`);
+    
+    // Debug: Check if we have expected characters
+    const sampleIds = ['kim-shin-current', 'seo-jintae', 'choi-minwook', 'nam-goong-hyuk'];
+    const foundSamples = characters.filter(c => sampleIds.includes(c.id));
+    console.log(`Found ${foundSamples.length}/${sampleIds.length} expected characters:`, foundSamples.map(c => c.id));
+    
+    // Debug: Check for missing data
+    const missingData = characters.filter(c => !c.image_url || !c.overall_elo);
+    if (missingData.length > 0) {
+      console.warn(`Found ${missingData.length} characters with missing data:`, missingData.map(c => ({ id: c.id, name: c.name, hasImage: !!c.image_url, hasElo: !!c.overall_elo })));
+    }
 
     // Always fetch match history to recalculate wins/losses accurately
     const characterIds = characters.map(c => c.id);
