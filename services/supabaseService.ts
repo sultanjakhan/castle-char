@@ -84,44 +84,105 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
       return await initializeDefaultCharacters();
     }
 
-    // Only fetch match history if requested (for performance)
+    // Always fetch match history to recalculate wins/losses accurately
+    const characterIds = characters.map(c => c.id);
     let historyByCharacter = new Map<string, MatchResult[]>();
-    if (includeHistory) {
-      const characterIds = characters.map(c => c.id);
-      // Limit total history records for performance
-      const { data: matchHistory, error: historyError } = await supabase
-        .from('match_history')
-        .select('*')
-        .in('character_id', characterIds)
-        .order('created_at', { ascending: false })
-        .limit(100); // Total limit, not per character
+    let winsLossesByCharacter = new Map<string, { wins: number; losses: number }>();
+    
+    // Only fetch if we have characters
+    if (characterIds.length > 0) {
+      try {
+        // Fetch ALL match history to recalculate wins/losses (not limited for accuracy)
+        const { data: matchHistory, error: historyError } = await supabase
+          .from('match_history')
+          .select('*')
+          .in('character_id', characterIds)
+          .order('created_at', { ascending: false });
 
-      if (historyError) {
-        console.warn('Error fetching match history:', historyError);
-      } else if (matchHistory) {
-        // Group and limit per character
-        matchHistory.forEach(match => {
-          if (!historyByCharacter.has(match.character_id)) {
-            historyByCharacter.set(match.character_id, []);
-          }
-          const charHistory = historyByCharacter.get(match.character_id)!;
-          if (charHistory.length < 10) { // Max 10 per character
-            charHistory.push({
-              opponentId: match.opponent_id,
-              opponentName: match.opponent_name,
-              result: match.result as 'WIN' | 'LOSS',
-              eloChange: match.elo_change,
-              date: new Date(match.created_at).getTime(),
-              scenarioDescription: match.scenario_description
-            });
-          }
-        });
+        if (historyError) {
+          console.warn('Error fetching match history:', historyError);
+        } else if (matchHistory) {
+          // Group by character and recalculate wins/losses
+          matchHistory.forEach(match => {
+            const charId = match.character_id;
+            
+            // Initialize if needed
+            if (!historyByCharacter.has(charId)) {
+              historyByCharacter.set(charId, []);
+            }
+            if (!winsLossesByCharacter.has(charId)) {
+              winsLossesByCharacter.set(charId, { wins: 0, losses: 0 });
+            }
+            
+            // Count wins/losses
+            const stats = winsLossesByCharacter.get(charId)!;
+            if (match.result === 'WIN') {
+              stats.wins += 1;
+            } else if (match.result === 'LOSS') {
+              stats.losses += 1;
+            }
+            
+            // Add to history (limit to 10 most recent for display, but only if includeHistory is true)
+            if (includeHistory) {
+              const charHistory = historyByCharacter.get(charId)!;
+              if (charHistory.length < 10) {
+                charHistory.push({
+                  opponentId: match.opponent_id,
+                  opponentName: match.opponent_name,
+                  result: match.result as 'WIN' | 'LOSS',
+                  eloChange: match.elo_change,
+                  date: new Date(match.created_at).getTime(),
+                  scenarioDescription: match.scenario_description
+                });
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error processing match history:', error);
+        // Continue with empty history if there's an error
       }
     }
 
-    return characters.map(char => 
-      dbToCharacter(char, historyByCharacter.get(char.id) || [])
-    );
+    // Update DB with recalculated wins/losses to keep them in sync
+    const charactersToUpdate = characters
+      .map(char => {
+        const stats = winsLossesByCharacter.get(char.id) || { wins: 0, losses: 0 };
+        // Only update if different from DB
+        if (char.wins !== stats.wins || char.losses !== stats.losses) {
+          return { id: char.id, wins: stats.wins, losses: stats.losses };
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<{ id: string; wins: number; losses: number }>;
+
+    // Batch update wins/losses in DB if needed
+    if (charactersToUpdate.length > 0) {
+      try {
+        await Promise.all(
+          charactersToUpdate.map(update =>
+            supabase
+              .from('characters')
+              .update({ wins: update.wins, losses: update.losses })
+              .eq('id', update.id)
+          )
+        );
+      } catch (error) {
+        console.warn('Error syncing wins/losses to DB:', error);
+      }
+    }
+
+    return characters.map(char => {
+      const history = historyByCharacter.get(char.id) || [];
+      const stats = winsLossesByCharacter.get(char.id) || { wins: 0, losses: 0 };
+      
+      // Use recalculated wins/losses from match_history instead of DB values
+      const character = dbToCharacter(char, history);
+      character.wins = stats.wins;
+      character.losses = stats.losses;
+      
+      return character;
+    });
   } catch (error) {
     console.error('Error fetching characters:', error);
     // Fallback to localStorage
