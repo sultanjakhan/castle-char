@@ -77,12 +77,18 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
       .select('*')
       .order('overall_elo', { ascending: false });
 
-    if (charsError) throw charsError;
+    if (charsError) {
+      console.error('Error fetching characters from DB:', charsError);
+      throw charsError;
+    }
 
     if (!characters || characters.length === 0) {
+      console.warn('No characters found in DB, initializing defaults');
       // Initialize with default characters
       return await initializeDefaultCharacters();
     }
+
+    console.log(`Loaded ${characters.length} characters from DB`);
 
     // Always fetch match history to recalculate wins/losses accurately
     const characterIds = characters.map(c => c.id);
@@ -171,9 +177,9 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
       }
     }
 
-    return characters.map(char => {
+    const result = characters.map(char => {
       const history = historyByCharacter.get(char.id) || [];
-      const stats = winsLossesByCharacter.get(char.id) || { wins: 0, losses: 0 };
+      const stats = winsLossesByCharacter.get(char.id) || { wins: char.wins || 0, losses: char.losses || 0 };
       
       // Use recalculated wins/losses from match_history instead of DB values
       const character = dbToCharacter(char, history);
@@ -182,6 +188,13 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
       
       return character;
     });
+    
+    // Debug: Log if we're missing expected characters
+    if (result.length < 30) {
+      console.warn(`Only ${result.length} characters loaded. Expected more.`);
+    }
+    
+    return result;
   } catch (error) {
     console.error('Error fetching characters:', error);
     // Fallback to localStorage
