@@ -216,8 +216,17 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
         character.losses = stats.losses;
       } else {
         // Keep DB values if no match history found
-        character.wins = char.wins || 0;
-        character.losses = char.losses || 0;
+        character.wins = char.wins != null ? char.wins : 0;
+        character.losses = char.losses != null ? char.losses : 0;
+      }
+      
+      // Debug: Log if character has missing critical data
+      if (!character.imageUrl || !character.overallElo || character.overallElo === 0) {
+        console.warn(`Character ${character.id} (${character.name}) has missing data:`, {
+          hasImage: !!character.imageUrl,
+          overallElo: character.overallElo,
+          imageUrl: character.imageUrl
+        });
       }
       
       return character;
