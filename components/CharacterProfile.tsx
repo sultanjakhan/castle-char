@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Character, StatCategory } from '../types';
-import { getCharacterById, getCharacters } from '../services/storageService';
+import { getCharacterById, getCharacters } from '../services/supabaseService';
 import { getTier } from './CharacterCard';
 import { TIER_COLORS } from '../constants';
 import { ArrowLeft, History, Trophy, TrendingUp, Users, Plus } from 'lucide-react';
@@ -19,15 +19,18 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
   const [allVersions, setAllVersions] = useState<Character[]>([]);
 
   useEffect(() => {
-    const char = getCharacterById(characterId);
-    if (char) {
-       setCharacter(char);
-       // Fetch all versions based on name matching
-       const all = getCharacters();
-       const related = all.filter(c => c.name.toLowerCase() === char.name.toLowerCase());
-       // Sort versions: Current first, then others alphabetically or by some logic
-       setAllVersions(related);
-    }
+    const loadCharacter = async () => {
+      const char = await getCharacterById(characterId);
+      if (char) {
+         setCharacter(char);
+         // Fetch all versions based on name matching
+         const all = await getCharacters();
+         const related = all.filter(c => c.name.toLowerCase() === char.name.toLowerCase());
+         // Sort versions: Current first, then others alphabetically or by some logic
+         setAllVersions(related);
+      }
+    };
+    loadCharacter();
   }, [characterId]);
 
   if (!character) return <div>Loading...</div>;
@@ -43,8 +46,8 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
     { subject: 'Assassination', A: character.assassinationElo, fullMark: 2000 },
   ];
 
-  const handleSwitchVersion = (id: string) => {
-     const newChar = getCharacterById(id);
+  const handleSwitchVersion = async (id: string) => {
+     const newChar = await getCharacterById(id);
      if (newChar) setCharacter(newChar);
   };
 

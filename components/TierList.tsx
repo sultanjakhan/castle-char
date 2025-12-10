@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Character, Tier } from '../types';
-import { getCharacters } from '../services/storageService';
+import { getCharacters } from '../services/supabaseService';
 import { getTier } from './CharacterCard';
 import { TIER_COLORS } from '../constants';
 import { User } from 'lucide-react';
@@ -9,7 +9,11 @@ export const TierList: React.FC = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
 
   useEffect(() => {
-    setCharacters(getCharacters());
+    const loadCharacters = async () => {
+      const chars = await getCharacters();
+      setCharacters(chars);
+    };
+    loadCharacters();
   }, []);
 
   const tiers = [Tier.EX, Tier.SSS, Tier.SS, Tier.S, Tier.AA, Tier.A, Tier.B, Tier.C, Tier.D, Tier.E];

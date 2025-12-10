@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Character } from '../types';
-import { getCharacters, deleteCharacter } from '../services/storageService';
+import { getCharacters, deleteCharacter } from '../services/supabaseService';
 import { CharacterCard } from './CharacterCard';
 import { Search, Users, Trash2 } from 'lucide-react';
 
@@ -16,14 +16,19 @@ export const Roster: React.FC<RosterProps> = ({ onEditCharacter, onSelectCharact
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    setCharacters(getCharacters());
+    const loadCharacters = async () => {
+      const chars = await getCharacters();
+      setCharacters(chars);
+    };
+    loadCharacters();
   }, []);
 
-  const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
     if (confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) {
-      deleteCharacter(id);
-      setCharacters(getCharacters());
+      await deleteCharacter(id);
+      const chars = await getCharacters();
+      setCharacters(chars);
       onRefresh();
     }
   };

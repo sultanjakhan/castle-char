@@ -11,7 +11,7 @@ import { Roster } from './components/Roster';
 import { Organizations } from './components/Organizations';
 import { OrganizationDetail } from './components/OrganizationDetail';
 import { AppView, Character } from './types';
-import { saveCharacterDetails, addCharacter, getCharacters } from './services/storageService';
+import { saveCharacterDetails, addCharacter, getCharacters } from './services/supabaseService';
 import { PlusCircle, Download } from 'lucide-react';
 
 export default function App() {
@@ -71,22 +71,22 @@ export default function App() {
     setIsEditorOpen(true);
   };
 
-  const handleSaveCharacter = (data: any) => {
+  const handleSaveCharacter = async (data: any) => {
     if (editorCharacter && editorCharacter.id && data.id === editorCharacter.id) {
       // Merge with existing to keep stats
-      const existing = getCharacters().find(c => c.id === editorCharacter.id);
+      const existing = (await getCharacters()).find(c => c.id === editorCharacter.id);
       const updated = { ...existing, ...data };
-      saveCharacterDetails(updated);
+      await saveCharacterDetails(updated);
     } else {
       // Add new
-      addCharacter(data);
+      await addCharacter(data);
     }
     setIsEditorOpen(false);
     refreshData();
   };
 
-  const handleExport = () => {
-    const data = getCharacters();
+  const handleExport = async () => {
+    const data = await getCharacters();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Character } from '../types';
-import { getCharacters } from '../services/storageService';
+import { getCharacters } from '../services/supabaseService';
 import { CharacterCard } from './CharacterCard';
 import { Building2, ChevronRight, Eye } from 'lucide-react';
 
@@ -14,7 +14,11 @@ export const Organizations: React.FC<OrganizationsProps> = ({ onSelectCharacter,
   const [characters, setCharacters] = useState<Character[]>([]);
 
   useEffect(() => {
-    setCharacters(getCharacters());
+    const loadCharacters = async () => {
+      const chars = await getCharacters();
+      setCharacters(chars);
+    };
+    loadCharacters();
   }, []);
 
   const getGroupedCharacters = () => {

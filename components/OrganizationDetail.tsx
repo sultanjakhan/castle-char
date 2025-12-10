@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Character, Faction } from '../types';
-import { getCharacters, saveCharacterDetails, getOrgDescription, saveOrgDescription, addCharacter } from '../services/storageService';
+import { getCharacters, saveCharacterDetails, getOrgDescription, saveOrgDescription, addCharacter } from '../services/supabaseService';
 import { CharacterCard, getTier } from './CharacterCard';
 import { ArrowLeft, UserPlus, TrendingUp, Users, Shield, Zap, Pencil, Trash2, PlusCircle, Save } from 'lucide-react';
 import { TIER_COLORS } from '../constants';
@@ -28,14 +28,17 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
   const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   useEffect(() => {
-    loadData();
-    const desc = getOrgDescription(faction);
-    setDescription(desc);
-    setEditedDesc(desc);
+    const load = async () => {
+      await loadData();
+      const desc = await getOrgDescription(faction);
+      setDescription(desc);
+      setEditedDesc(desc);
+    };
+    load();
   }, [faction]);
 
-  const loadData = () => {
-    const all = getCharacters();
+  const loadData = async () => {
+    const all = await getCharacters();
     setMembers(all.filter(c => c.faction === faction).sort((a, b) => b.overallElo - a.overallElo));
     setAvailableRecruits(all.filter(c => c.faction !== faction).sort((a, b) => a.name.localeCompare(b.name)));
   };
@@ -46,41 +49,41 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ faction,
   
   const avgTier = getTier(avgElo);
 
-  const handleRecruit = (char: Character) => {
+  const handleRecruit = async (char: Character) => {
     const updated = { ...char, faction: faction };
-    saveCharacterDetails(updated);
+    await saveCharacterDetails(updated);
     onDataChange();
-    loadData(); // Reload local state
+    await loadData(); // Reload local state
     setIsRecruiting(false);
   };
 
-  const handleKick = (e: React.MouseEvent, char: Character) => {
+  const handleKick = async (e: React.MouseEvent, char: Character) => {
     e.stopPropagation();
     if(confirm(`Remove ${char.name} from ${faction}?`)) {
       const updated = { ...char, faction: Faction.OTHER };
-      saveCharacterDetails(updated);
+      await saveCharacterDetails(updated);
       onDataChange();
-      loadData();
+      await loadData();
     }
   };
 
-  const saveDescription = () => {
-    saveOrgDescription(faction, editedDesc);
+  const saveDescription = async () => {
+    await saveOrgDescription(faction, editedDesc);
     setDescription(editedDesc);
     setIsEditingDesc(false);
   };
 
-  const handleCreateNewSave = (data: any) => {
+  const handleCreateNewSave = async (data: any) => {
       // Data from editor comes with the ID already, we just save it using the App's normal flow effectively
       // But since we are inside a component, we can call saveCharacterDetails directly if it's new.
       // Wait, the main App.tsx handles saving via props usually, but here we can use the service.
       // We need to ensure the faction is set to THIS faction.
       const newCharData = { ...data, faction: faction };
       
-      addCharacter(newCharData);
+      await addCharacter(newCharData);
       
       onDataChange();
-      loadData();
+      await loadData();
       setIsCreatingNew(false);
       setIsRecruiting(false);
   };

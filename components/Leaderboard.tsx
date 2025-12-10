@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Character, StatCategory, Tier } from '../types';
-import { getCharacters } from '../services/storageService';
+import { getCharacters } from '../services/supabaseService';
 import { getTier } from './CharacterCard';
 import { TIER_COLORS, STAT_LABELS } from '../constants';
 import { Search, User, Pencil } from 'lucide-react';
@@ -16,7 +16,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onSelectCharacter, onE
   const [filterText, setFilterText] = useState('');
   
   useEffect(() => {
-    setCharacters(getCharacters());
+    const loadCharacters = async () => {
+      const chars = await getCharacters();
+      setCharacters(chars);
+    };
+    loadCharacters();
   }, []);
 
   const sortedCharacters = [...characters]

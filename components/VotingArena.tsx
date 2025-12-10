@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Character, VoteResult, ActiveScenario, StatCategory, ScenarioLocation, ScenarioWeapon, ScenarioFormat } from '../types';
-import { getCharacters, updateCharactersAfterVote } from '../services/storageService';
+import { getCharacters, updateCharactersAfterVote } from '../services/supabaseService';
 import { applyVote } from '../services/eloService';
 import { CharacterCard } from './CharacterCard';
 import { LOCATIONS, WEAPONS, FORMATS, SCENARIO_MAPPING, STAT_LABELS } from '../constants';
@@ -118,7 +118,11 @@ export const VotingArena: React.FC<VotingArenaProps> = ({ mode, onVoteComplete }
   const [customFormatId, setCustomFormatId] = useState<string>('random');
 
   useEffect(() => {
-    setCharacters(getCharacters());
+    const loadCharacters = async () => {
+      const chars = await getCharacters();
+      setCharacters(chars);
+    };
+    loadCharacters();
     // If mode switches to random, ensure we exit setup mode
     if (mode === 'random') {
       setSetupMode(false);
@@ -198,14 +202,14 @@ export const VotingArena: React.FC<VotingArenaProps> = ({ mode, onVoteComplete }
     setVoteResult(null);
   };
 
-  const handleVote = (winner: Character, loser: Character) => {
+  const handleVote = async (winner: Character, loser: Character) => {
     if (voteResult || !activeScenario) return;
 
     // Apply vote to Overall + Affected Categories
     const categoriesToUpdate = [StatCategory.OVERALL, ...activeScenario.affectedCategories];
     
     const result = applyVote(winner, loser, categoriesToUpdate);
-    updateCharactersAfterVote(result.winner, result.loser);
+    await updateCharactersAfterVote(result.winner, result.loser);
     
     setVoteResult({
       winnerId: winner.id,
