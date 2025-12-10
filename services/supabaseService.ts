@@ -149,19 +149,29 @@ const initializeDefaultCharacters = async (): Promise<Character[]> => {
 
   if (supabase) {
     try {
-      // Insert all default characters
-      const dbData = initialData.map(characterToDb);
-      const { error } = await supabase
+      // Check if characters already exist
+      const { count } = await supabase
         .from('characters')
-        .insert(dbData);
+        .select('*', { count: 'exact', head: true });
 
-      if (error) throw error;
+      // Only insert if table is empty
+      if (count === 0) {
+        const dbData = initialData.map(characterToDb);
+        const { error } = await supabase
+          .from('characters')
+          .insert(dbData);
+
+        if (error) {
+          console.error('Error initializing characters:', error);
+        }
+      }
     } catch (error) {
       console.error('Error initializing characters:', error);
+      // Continue anyway - maybe characters already exist
     }
   } else {
     // Fallback to localStorage
-    saveCharacters(initialData);
+    localStorage.setItem('castle_ranker_data_v9_visible', JSON.stringify(initialData));
   }
 
   return initialData;
