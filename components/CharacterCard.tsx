@@ -76,7 +76,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
               e.stopPropagation();
               setShowMenu(!showMenu);
             }}
-            className="p-1.5 rounded bg-black/90 hover:bg-black text-neutral-400 hover:text-white border border-neutral-700 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+            className="p-1.5 rounded bg-black/90 hover:bg-red-600 text-neutral-400 hover:text-white border border-neutral-700 transition-all opacity-70 hover:opacity-100 shadow-lg"
             title="Actions"
           >
             <MoreVertical className="w-3 h-3" />

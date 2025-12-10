@@ -168,6 +168,7 @@ export default function App() {
             characterId={selectedCharacterId} 
             onBack={() => handleNavigate(AppView.LEADERBOARD)}
             onAddVersion={openAddVersion}
+            onEditCharacter={openEditCharacter}
           />
         )}
       </main>

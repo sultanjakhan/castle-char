@@ -4,7 +4,7 @@ import { Character, StatCategory } from '../types';
 import { getCharacterById, getCharacters } from '../services/supabaseService';
 import { getTier } from './CharacterCard';
 import { TIER_COLORS } from '../constants';
-import { ArrowLeft, History, Trophy, TrendingUp, Users, Plus } from 'lucide-react';
+import { ArrowLeft, History, Trophy, TrendingUp, Users, Plus, Pencil } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 import { ImageWithFallback } from './ImageWithFallback';
 
@@ -12,9 +12,10 @@ interface CharacterProfileProps {
   characterId: string;
   onBack: () => void;
   onAddVersion?: (baseChar: Character) => void;
+  onEditCharacter?: (character: Character) => void;
 }
 
-export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId, onBack, onAddVersion }) => {
+export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId, onBack, onAddVersion, onEditCharacter }) => {
   const [character, setCharacter] = useState<Character | null>(null);
   const [allVersions, setAllVersions] = useState<Character[]>([]);
 
@@ -63,18 +64,31 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
       {/* VERSION TABS */}
       <div className="flex items-center gap-2 border-b border-neutral-800 overflow-x-auto pb-1">
         {allVersions.length > 0 && allVersions.map(v => (
-          <button
-            key={v.id}
-            onClick={() => handleSwitchVersion(v.id)}
-            className={`
-               px-4 py-2 text-xs md:text-sm font-bold uppercase tracking-wider rounded-t-lg transition-colors whitespace-nowrap
-               ${character.id === v.id 
-                 ? 'bg-neutral-900 text-red-500 border-t border-x border-neutral-800' 
-                 : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50'}
-            `}
-          >
-            {v.version}
-          </button>
+          <div key={v.id} className="flex items-center gap-1 group/version">
+            <button
+              onClick={() => handleSwitchVersion(v.id)}
+              className={`
+                 px-4 py-2 text-xs md:text-sm font-bold uppercase tracking-wider rounded-t-lg transition-colors whitespace-nowrap
+                 ${character.id === v.id 
+                   ? 'bg-neutral-900 text-red-500 border-t border-x border-neutral-800' 
+                   : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50'}
+              `}
+            >
+              {v.version}
+            </button>
+            {onEditCharacter && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditCharacter(v);
+                }}
+                className="opacity-0 group-hover/version:opacity-100 p-1.5 rounded bg-neutral-800 hover:bg-red-600 text-neutral-500 hover:text-white transition-all"
+                title={`Edit ${v.version} version`}
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         ))}
         {onAddVersion && (
           <button 
@@ -113,9 +127,20 @@ export const CharacterProfile: React.FC<CharacterProfileProps> = ({ characterId,
               </span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tight mb-4">
-              {character.name} <span className="text-neutral-600 text-2xl align-top ml-2">{character.version}</span>
-            </h1>
+            <div className="flex items-center gap-3 mb-4">
+              <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tight">
+                {character.name} <span className="text-neutral-600 text-2xl align-top ml-2">{character.version}</span>
+              </h1>
+              {onEditCharacter && (
+                <button
+                  onClick={() => onEditCharacter(character)}
+                  className="p-2 rounded bg-neutral-800 hover:bg-red-600 text-neutral-400 hover:text-white border border-neutral-700 transition-all"
+                  title="Edit character"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+            </div>
             
             <p className="text-slate-400 text-lg mb-8 leading-relaxed">
               {character.description}
