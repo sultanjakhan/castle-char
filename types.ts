@@ -34,7 +34,9 @@ export enum Tier {
   B = 'B',
   C = 'C',
   D = 'D',
-  E = 'E'
+  E = 'E',
+  F = 'F',
+  UNKNOWN = 'UNKNOWN'
 }
 
 export interface Character {
@@ -45,7 +47,7 @@ export interface Character {
   description: string;
   faction: string; // Changed from Faction enum to string to support custom factions
   wikiLink?: string;
-  
+
   // Elo Ratings
   overallElo: number;
   handToHandElo: number;

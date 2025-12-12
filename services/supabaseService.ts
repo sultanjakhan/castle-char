@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Character, MatchResult } from '../types';
-import { INITIAL_CHARACTERS, INITIAL_ELO } from '../constants';
+import { INITIAL_CHARACTERS, INITIAL_ELO, F_TIER_INITIAL_ELO, F_TIER_CHARACTER_IDS } from '../constants';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -9,9 +9,45 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials not found. Falling back to localStorage.');
 }
 
-const supabase = supabaseUrl && supabaseAnonKey 
+const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
+
+// Number sanitizer that tolerates strings/nulls
+const toNumberSafe = (value: any, defaultValue: number): number => {
+  if (value == null) return defaultValue;
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return isNaN(num) ? defaultValue : num;
+};
+
+// Normalize/patch a character object with baked-in defaults (for localStorage/Supabase gaps)
+const normalizeCharacter = (char: Character): Character => {
+  const baseMeta = INITIAL_CHARACTERS.find(
+    c => c.id === char.id || (char.name && c.name.toLowerCase() === char.name.toLowerCase())
+  );
+
+  return {
+    ...char,
+    name: char.name || baseMeta?.name || 'Unknown',
+    version: char.version || baseMeta?.version || 'Current',
+    imageUrl: char.imageUrl || baseMeta?.imageUrl || '',
+    description: char.description || baseMeta?.description || '',
+    faction: char.faction || baseMeta?.faction || 'Other',
+    overallElo: toNumberSafe(char.overallElo, INITIAL_ELO),
+    handToHandElo: toNumberSafe(char.handToHandElo, INITIAL_ELO),
+    bladedWeaponsElo: toNumberSafe(char.bladedWeaponsElo, INITIAL_ELO),
+    firearmsElo: toNumberSafe(char.firearmsElo, INITIAL_ELO),
+    battleIqElo: toNumberSafe(char.battleIqElo, INITIAL_ELO),
+    physicalStatsElo: toNumberSafe(char.physicalStatsElo, INITIAL_ELO),
+    speedElo: toNumberSafe(char.speedElo, INITIAL_ELO),
+    durabilityElo: toNumberSafe(char.durabilityElo, INITIAL_ELO),
+    staminaElo: toNumberSafe(char.staminaElo, INITIAL_ELO),
+    assassinationElo: toNumberSafe(char.assassinationElo, INITIAL_ELO),
+    wins: toNumberSafe(char.wins, 0),
+    losses: toNumberSafe(char.losses, 0),
+    matchHistory: Array.isArray(char.matchHistory) ? char.matchHistory : []
+  };
+};
 
 // Helper to convert DB character to app Character
 const dbToCharacter = (dbChar: any, matchHistory: MatchResult[] = []): Character => {
@@ -19,35 +55,33 @@ const dbToCharacter = (dbChar: any, matchHistory: MatchResult[] = []): Character
   if (!dbChar.id || !dbChar.name) {
     console.error('Invalid character data:', dbChar);
   }
-  
-  // Helper to ensure numeric values
-  const toNumber = (value: any, defaultValue: number): number => {
-    if (value == null) return defaultValue;
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    return isNaN(num) ? defaultValue : num;
-  };
-  
+
+  // Fill missing metadata from the baked-in defaults (helps when DB rows are incomplete)
+  const baseMeta = INITIAL_CHARACTERS.find(
+    c => c.id === dbChar.id || (dbChar.name && c.name.toLowerCase() === dbChar.name.toLowerCase())
+  );
+
   return {
     id: dbChar.id || '',
-    name: dbChar.name || 'Unknown',
-    version: dbChar.version || 'Current',
-    imageUrl: dbChar.image_url || '',
-    description: dbChar.description || '',
-    faction: dbChar.faction || 'Other',
+    name: dbChar.name || baseMeta?.name || 'Unknown',
+    version: dbChar.version || baseMeta?.version || 'Current',
+    imageUrl: dbChar.image_url || baseMeta?.imageUrl || '',
+    description: dbChar.description || baseMeta?.description || '',
+    faction: dbChar.faction || baseMeta?.faction || 'Other',
     wikiLink: dbChar.wiki_link || undefined,
     // Ensure all ELO values are numbers
-    overallElo: toNumber(dbChar.overall_elo, INITIAL_ELO),
-    handToHandElo: toNumber(dbChar.hand_to_hand_elo, INITIAL_ELO),
-    bladedWeaponsElo: toNumber(dbChar.bladed_weapons_elo, INITIAL_ELO),
-    firearmsElo: toNumber(dbChar.firearms_elo, INITIAL_ELO),
-    battleIqElo: toNumber(dbChar.battle_iq_elo, INITIAL_ELO),
-    physicalStatsElo: toNumber(dbChar.physical_stats_elo, INITIAL_ELO),
-    speedElo: toNumber(dbChar.speed_elo, INITIAL_ELO),
-    durabilityElo: toNumber(dbChar.durability_elo, INITIAL_ELO),
-    staminaElo: toNumber(dbChar.stamina_elo, INITIAL_ELO),
-    assassinationElo: toNumber(dbChar.assassination_elo, INITIAL_ELO),
-    wins: toNumber(dbChar.wins, 0),
-    losses: toNumber(dbChar.losses, 0),
+    overallElo: toNumberSafe(dbChar.overall_elo, INITIAL_ELO),
+    handToHandElo: toNumberSafe(dbChar.hand_to_hand_elo, INITIAL_ELO),
+    bladedWeaponsElo: toNumberSafe(dbChar.bladed_weapons_elo, INITIAL_ELO),
+    firearmsElo: toNumberSafe(dbChar.firearms_elo, INITIAL_ELO),
+    battleIqElo: toNumberSafe(dbChar.battle_iq_elo, INITIAL_ELO),
+    physicalStatsElo: toNumberSafe(dbChar.physical_stats_elo, INITIAL_ELO),
+    speedElo: toNumberSafe(dbChar.speed_elo, INITIAL_ELO),
+    durabilityElo: toNumberSafe(dbChar.durability_elo, INITIAL_ELO),
+    staminaElo: toNumberSafe(dbChar.stamina_elo, INITIAL_ELO),
+    assassinationElo: toNumberSafe(dbChar.assassination_elo, INITIAL_ELO),
+    wins: toNumberSafe(dbChar.wins, 0),
+    losses: toNumberSafe(dbChar.losses, 0),
     matchHistory: matchHistory || []
   };
 };
@@ -80,7 +114,7 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
     // Fallback to localStorage
     const stored = localStorage.getItem('castle_ranker_data_v9_visible');
     if (stored) {
-      return JSON.parse(stored);
+      return JSON.parse(stored).map(normalizeCharacter);
     }
     return initializeDefaultCharacters();
   }
@@ -104,171 +138,59 @@ export const getCharacters = async (includeHistory: boolean = false): Promise<Ch
     }
 
     console.log(`Loaded ${characters.length} characters from DB`);
-    
+
     // Debug: Check if we have expected characters
     const sampleIds = ['kim-shin-current', 'seo-jintae', 'choi-minwook', 'nam-goong-hyuk'];
     const foundSamples = characters.filter(c => sampleIds.includes(c.id));
     console.log(`Found ${foundSamples.length}/${sampleIds.length} expected characters:`, foundSamples.map(c => c.id));
-    
+
     // Debug: Check for missing data
     const missingData = characters.filter(c => !c.image_url || !c.overall_elo);
     if (missingData.length > 0) {
       console.warn(`Found ${missingData.length} characters with missing data:`, missingData.map(c => ({ id: c.id, name: c.name, hasImage: !!c.image_url, hasElo: !!c.overall_elo })));
     }
 
-    // Always fetch match history to recalculate wins/losses accurately
-    const characterIds = characters.map(c => c.id);
-    let historyByCharacter = new Map<string, MatchResult[]>();
-    let winsLossesByCharacter = new Map<string, { wins: number; losses: number }>();
-    
-    // Only fetch if we have characters
-    if (characterIds.length > 0) {
-      try {
-        // Fetch ALL match history to recalculate wins/losses (not limited for accuracy)
-        const { data: matchHistory, error: historyError } = await supabase
-          .from('match_history')
-          .select('*')
-          .in('character_id', characterIds)
-          .order('created_at', { ascending: false });
-
-        if (historyError) {
-          console.warn('Error fetching match history:', historyError);
-        } else if (matchHistory) {
-          // Group by character and recalculate wins/losses
-          matchHistory.forEach(match => {
-            const charId = match.character_id;
-            
-            // Initialize if needed
-            if (!historyByCharacter.has(charId)) {
-              historyByCharacter.set(charId, []);
-            }
-            if (!winsLossesByCharacter.has(charId)) {
-              winsLossesByCharacter.set(charId, { wins: 0, losses: 0 });
-            }
-            
-            // Count wins/losses
-            const stats = winsLossesByCharacter.get(charId)!;
-            if (match.result === 'WIN') {
-              stats.wins += 1;
-            } else if (match.result === 'LOSS') {
-              stats.losses += 1;
-            }
-            
-            // Add to history (limit to 10 most recent for display, but only if includeHistory is true)
-            // Always populate history map for wins/losses calculation, but limit display items
-            const charHistory = historyByCharacter.get(charId)!;
-            if (includeHistory && charHistory.length < 10) {
-              charHistory.push({
-                opponentId: match.opponent_id,
-                opponentName: match.opponent_name,
-                result: match.result as 'WIN' | 'LOSS',
-                eloChange: match.elo_change,
-                date: new Date(match.created_at).getTime(),
-                scenarioDescription: match.scenario_description
-              });
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error processing match history:', error);
-        // Continue with empty history if there's an error
-      }
-    }
-
-    // Update DB with recalculated wins/losses to keep them in sync
-    // BUT: Only update if we actually have match history data, otherwise keep DB values
-    const charactersToUpdate = characters
-      .map(char => {
-        const stats = winsLossesByCharacter.get(char.id);
-        // Only update if we have stats from match_history AND they differ from DB
-        if (stats && (char.wins !== stats.wins || char.losses !== stats.losses)) {
-          return { id: char.id, wins: stats.wins, losses: stats.losses };
-        }
-        return null;
-      })
-      .filter(Boolean) as Array<{ id: string; wins: number; losses: number }>;
-
-    // Batch update wins/losses in DB if needed (but don't overwrite with zeros if no history)
-    if (charactersToUpdate.length > 0) {
-      try {
-        await Promise.all(
-          charactersToUpdate.map(update =>
-            supabase
-              .from('characters')
-              .update({ wins: update.wins, losses: update.losses })
-              .eq('id', update.id)
-          )
-        );
-        console.log(`Updated wins/losses for ${charactersToUpdate.length} characters`);
-      } catch (error) {
-        console.warn('Error syncing wins/losses to DB:', error);
-      }
-    }
-
+    // Optimization: Use DB values directly instead of recalculating from history on every load
     const result = characters.map(char => {
-      const history = historyByCharacter.get(char.id) || [];
-      const stats = winsLossesByCharacter.get(char.id);
-      
-      // Use recalculated wins/losses from match_history if available, otherwise use DB values
-      const character = dbToCharacter(char, history);
-      if (stats) {
-        character.wins = stats.wins;
-        character.losses = stats.losses;
-      } else {
-        // Keep DB values if no match history found
-        character.wins = char.wins != null ? char.wins : 0;
-        character.losses = char.losses != null ? char.losses : 0;
-      }
-      
-      // Debug: Log if character has missing critical data
-      if (!character.imageUrl || !character.overallElo || character.overallElo === 0) {
-        console.warn(`Character ${character.id} (${character.name}) has missing data:`, {
-          hasImage: !!character.imageUrl,
-          overallElo: character.overallElo,
-          imageUrl: character.imageUrl
-        });
-      }
-      
-      return character;
+      const character = dbToCharacter(char, []);
+      return normalizeCharacter(character);
     });
-    
-    // Debug: Log character count and check for expected characters
+
     console.log(`Loaded ${result.length} characters from DB`);
-    const expectedChars = ['kim-shin-current', 'seo-jintae', 'choi-minwook'];
-    const foundExpected = result.filter(c => expectedChars.includes(c.id));
-    if (foundExpected.length < expectedChars.length) {
-      console.warn(`Missing expected characters. Found: ${foundExpected.map(c => c.id).join(', ')}`);
-    }
-    
+
     return result;
   } catch (error) {
     console.error('Error fetching characters:', error);
     // Fallback to localStorage
     const stored = localStorage.getItem('castle_ranker_data_v9_visible');
     if (stored) {
-      return JSON.parse(stored);
+      return JSON.parse(stored).map(normalizeCharacter);
     }
     return initializeDefaultCharacters();
   }
 };
 
 const initializeDefaultCharacters = async (): Promise<Character[]> => {
-  const initialData: Character[] = INITIAL_CHARACTERS.map(c => ({
-    ...c,
-    overallElo: INITIAL_ELO,
-    handToHandElo: INITIAL_ELO,
-    bladedWeaponsElo: INITIAL_ELO,
-    firearmsElo: INITIAL_ELO,
-    battleIqElo: INITIAL_ELO,
-    physicalStatsElo: INITIAL_ELO,
-    speedElo: INITIAL_ELO,
-    durabilityElo: INITIAL_ELO,
-    staminaElo: INITIAL_ELO,
-    assassinationElo: INITIAL_ELO,
-    wins: 0,
-    losses: 0,
-    matchHistory: []
-  }));
+  const initialData: Character[] = INITIAL_CHARACTERS.map(c => {
+    const isFTier = F_TIER_CHARACTER_IDS.includes(c.id);
+    const elo = isFTier ? F_TIER_INITIAL_ELO : INITIAL_ELO;
+    return {
+      ...c,
+      overallElo: elo,
+      handToHandElo: elo,
+      bladedWeaponsElo: elo,
+      firearmsElo: elo,
+      battleIqElo: elo,
+      physicalStatsElo: elo,
+      speedElo: elo,
+      durabilityElo: elo,
+      staminaElo: elo,
+      assassinationElo: elo,
+      wins: 0,
+      losses: 0,
+      matchHistory: []
+    };
+  });
 
   if (supabase) {
     try {
@@ -297,7 +219,7 @@ const initializeDefaultCharacters = async (): Promise<Character[]> => {
     localStorage.setItem('castle_ranker_data_v9_visible', JSON.stringify(initialData));
   }
 
-  return initialData;
+  return initialData.map(normalizeCharacter);
 };
 
 export const saveCharacters = async (characters: Character[]): Promise<void> => {
@@ -323,8 +245,38 @@ export const saveCharacters = async (characters: Character[]): Promise<void> => 
 };
 
 export const getCharacterById = async (id: string, includeHistory: boolean = true): Promise<Character | undefined> => {
-  const characters = await getCharacters(includeHistory);
-  return characters.find(c => c.id === id);
+  // First get basic char info (fast, no history fetch)
+  const characters = await getCharacters(false);
+  const character = characters.find(c => c.id === id);
+
+  if (!character) return undefined;
+
+  // If history is requested, fetch it specifically for this character
+  if (includeHistory && supabase) {
+    try {
+      const { data: history, error } = await supabase
+        .from('match_history')
+        .select('*')
+        .eq('character_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!error && history) {
+        character.matchHistory = history.map(match => ({
+          opponentId: match.opponent_id,
+          opponentName: match.opponent_name,
+          result: match.result as 'WIN' | 'LOSS',
+          eloChange: match.elo_change,
+          date: new Date(match.created_at).getTime(),
+          scenarioDescription: match.scenario_description
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching character history:', err);
+    }
+  }
+
+  return character;
 };
 
 export const updateCharactersAfterVote = async (
@@ -338,7 +290,7 @@ export const updateCharactersAfterVote = async (
   if (supabase) {
     try {
       const timestamp = new Date().toISOString();
-      
+
       // Winner's match record
       await supabase.from('match_history').insert({
         character_id: winner.id,
@@ -367,35 +319,37 @@ export const updateCharactersAfterVote = async (
 export const saveCharacterDetails = async (character: Character): Promise<void> => {
   const characters = await getCharacters();
   const index = characters.findIndex(c => c.id === character.id);
-  
+
   if (index !== -1) {
     characters[index] = { ...characters[index], ...character };
   } else {
     characters.push(character);
   }
-  
+
   await saveCharacters(characters);
 };
 
 export const addCharacter = async (characterData: any): Promise<void> => {
   const characters = await getCharacters();
+  const isFTier = F_TIER_CHARACTER_IDS.includes(characterData.id);
+  const elo = isFTier ? F_TIER_INITIAL_ELO : INITIAL_ELO;
   const newChar: Character = {
     ...characterData,
-    overallElo: INITIAL_ELO,
-    handToHandElo: INITIAL_ELO,
-    bladedWeaponsElo: INITIAL_ELO,
-    firearmsElo: INITIAL_ELO,
-    battleIqElo: INITIAL_ELO,
-    physicalStatsElo: INITIAL_ELO,
-    speedElo: INITIAL_ELO,
-    durabilityElo: INITIAL_ELO,
-    staminaElo: INITIAL_ELO,
-    assassinationElo: INITIAL_ELO,
+    overallElo: elo,
+    handToHandElo: elo,
+    bladedWeaponsElo: elo,
+    firearmsElo: elo,
+    battleIqElo: elo,
+    physicalStatsElo: elo,
+    speedElo: elo,
+    durabilityElo: elo,
+    staminaElo: elo,
+    assassinationElo: elo,
     wins: 0,
     losses: 0,
     matchHistory: []
   };
-  
+
   characters.push(newChar);
   await saveCharacters(characters);
 };
@@ -447,7 +401,7 @@ export const deleteFaction = async (faction: string): Promise<void> => {
     const characters = await getCharacters();
     const filtered = characters.filter(c => c.faction !== faction);
     await saveCharacters(filtered);
-    
+
     // Remove from localStorage metadata
     const stored = localStorage.getItem('castle_ranker_org_meta');
     if (stored) {
@@ -463,17 +417,17 @@ export const resetData = async (): Promise<void> => {
     try {
       // Delete all match history
       await supabase.from('match_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      
+
       // Delete all characters
       await supabase.from('characters').delete().neq('id', '');
-      
+
       // Delete organization metadata
       await supabase.from('organization_metadata').delete().neq('faction', '');
     } catch (error) {
       console.error('Error resetting data:', error);
     }
   }
-  
+
   // Also clear localStorage
   localStorage.removeItem('castle_ranker_data_v9_visible');
   localStorage.removeItem('castle_ranker_org_meta');
@@ -495,7 +449,7 @@ export const getOrgDescription = async (faction: string): Promise<string> => {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-    
+
     return data?.description || "An active faction within the Castle universe.";
   } catch (error) {
     console.error('Error fetching org description:', error);

@@ -1,10 +1,22 @@
-
 import { Character, Faction, ScenarioFormat, ScenarioLocation, ScenarioWeapon, StatCategory, Tier } from "./types";
 
-export const INITIAL_ELO = 1200; 
+export const INITIAL_ELO = 1200;
+export const F_TIER_INITIAL_ELO = 400; // For F-tier characters (below 600 threshold)
 export const K_FACTOR = 32;
 
-// 10-Tier System
+// Characters that should start in F-tier
+export const F_TIER_CHARACTER_IDS = [
+  "lisa",
+  "oijin",
+  "kim-taehoon",
+  "cheon-ildo",
+  "shinsuke-iwashiro",
+  "lim-jong-tae",
+  "riwon-lee",
+  "marina"
+];
+
+// 12-Tier System
 export const TIER_THRESHOLDS = {
   [Tier.EX]: 2400,
   [Tier.SSS]: 2200,
@@ -15,7 +27,9 @@ export const TIER_THRESHOLDS = {
   [Tier.B]: 1200,
   [Tier.C]: 1000,
   [Tier.D]: 800,
-  [Tier.E]: 0,
+  [Tier.E]: 600,
+  [Tier.F]: 0,
+  [Tier.UNKNOWN]: -Infinity,
 };
 
 export const TIER_COLORS = {
@@ -29,6 +43,8 @@ export const TIER_COLORS = {
   [Tier.C]: "bg-blue-900/80 text-blue-100 border-blue-600",
   [Tier.D]: "bg-slate-800 text-slate-300 border-slate-600",
   [Tier.E]: "bg-neutral-900 text-neutral-500 border-neutral-800",
+  [Tier.F]: "bg-zinc-950 text-zinc-600 border-zinc-800",
+  [Tier.UNKNOWN]: "bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-gray-400 border-gray-700 border-dashed",
 };
 
 export const STAT_LABELS = {
@@ -100,7 +116,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Pyo Young",
     version: "Current",
     faction: Faction.BAEK_YI,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/0/07/Pyo_Young.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/0/07/Pyo_Young.jpg",
     description: "Agile assassin, skilled in using the environment.",
   },
 
@@ -126,7 +142,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Ma Minhwi",
     version: "Current",
     faction: Faction.CASTLE_HOLDINGS,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/7/7f/Ma_Min-Hwi.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/7/7f/Ma_Min-Hwi.jpg",
     description: "Brother of Ma Hakyeong and Castle Guard Elite.",
   },
   {
@@ -150,7 +166,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Jeongdan",
     version: "Current",
     faction: Faction.CASTLE_HOLDINGS,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/e/e9/Jeong_Dan.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/e/e9/Jeong_Dan.jpg",
     description: "A silent executioner for Castle.",
   },
 
@@ -200,7 +216,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Frigate",
     version: "Current",
     faction: Faction.ISKRA,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/9/91/Frigate.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/9/91/Frigate.jpg",
     description: "A towering member of Iskra.",
   },
   {
@@ -208,7 +224,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Doria",
     version: "Current",
     faction: Faction.ISKRA,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/a/a7/Doria.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/a/a7/Doria.jpg",
     description: "Member of Hot Blood team. British mercenary.",
   },
   {
@@ -216,7 +232,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Krupman",
     version: "Current",
     faction: Faction.ISKRA,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/3/32/Krupman.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/3/32/Krupman.jpg",
     description: "Precision expert.",
   },
   {
@@ -224,7 +240,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Shamo",
     version: "Current",
     faction: Faction.ISKRA,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/5/56/Shamo.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/5/56/Shamo.jpg",
     description: "Wild and unpredictable fighter.",
   },
 
@@ -250,7 +266,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Ling Ling",
     version: "Current",
     faction: Faction.HWAJIN,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/7/77/Ling_Ling.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/7/77/Ling_Ling.jpg",
     description: "Dangerous assassin from the mainland.",
   },
   {
@@ -258,17 +274,17 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Yoo Ilseon",
     version: "Current",
     faction: Faction.HWAJIN,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/7/73/Yoo_Il-Seon.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/7/73/Yoo_Il-Seon.jpg",
     description: "Yoo Woosung's brother. Skilled but arrogant.",
   },
-  
+
   // ADVANCED TRADE / IWASHIRO
   {
     id: "baek-do-chan",
     name: "Baek Do Chan",
     version: "Peak",
     faction: Faction.ADVANCED_TRADE,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/2/22/Baek_Do-Chan.jpg",
+    imageUrl: "https://i.pinimg.com/736x/21/22/e3/2122e37943486395232709214b931988.jpg",
     description: "The Python. The former strongest killer who nearly killed Kim Shin.",
   },
   {
@@ -287,7 +303,7 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/3/36/Hide.jpg",
     description: "Japanese yakuza leader affiliated with Castle.",
   },
-  
+
   // HASUNG
   {
     id: "ryu-jihak",
@@ -312,18 +328,60 @@ export const INITIAL_CHARACTERS: Omit<Character, 'overallElo' | 'handToHandElo' 
     name: "Cheon Ildo",
     version: "Current",
     faction: Faction.HOTEL_CASTLE,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/b/b3/Cheon_Il-Do.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/b/b3/Cheon_Il-Do.jpg",
     description: "Representative of Hotel Castle.",
   },
-  
+
   // MORI
   {
     id: "im-mooyeol",
     name: "Im Mooyeol",
     version: "Current",
     faction: Faction.MORI,
-    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/a/a2/Im_Moo-Yeol.jpg", 
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/a/a2/Im_Moo-Yeol.jpg",
     description: "Leader of Mori.",
+  },
+
+  // F-TIER CHARACTERS
+  {
+    id: "oijin",
+    name: "Oijin",
+    version: "Current",
+    faction: Faction.OTHER,
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/0/00/Oijin.jpg",
+    description: "A minor character with limited combat abilities.",
+  },
+  {
+    id: "shinsuke-iwashiro",
+    name: "Shinsuke Iwashiro",
+    version: "Current",
+    faction: Faction.IWASHIRO,
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/0/00/Shinsuke_Iwashiro.jpg",
+    description: "Member of the Iwashiro group.",
+  },
+  {
+    id: "lim-jong-tae",
+    name: "Lim Jong-Tae",
+    version: "Current",
+    faction: Faction.OTHER,
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/0/00/Lim_Jong-Tae.jpg",
+    description: "A new character in the series.",
+  },
+  {
+    id: "riwon-lee",
+    name: "Riwon Lee",
+    version: "Current",
+    faction: Faction.OTHER,
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/0/00/Riwon_Lee.jpg",
+    description: "A new character in the series.",
+  },
+  {
+    id: "marina",
+    name: "Marina",
+    version: "Current",
+    faction: Faction.OTHER,
+    imageUrl: "https://static.wikia.nocookie.net/castle-webtoon/images/0/00/Marina.jpg",
+    description: "A new character in the series.",
   }
 ];
 
